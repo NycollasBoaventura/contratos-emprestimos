@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Gerador de Confissão de Dívida e Notas Promissórias</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f2f5;
+    margin: 0;
+    padding: 24px;
+    color: #222;
+  }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .layout { display: flex; gap: 24px; align-items: flex-start; }
+  #formulario {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    width: 420px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  #formulario fieldset { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 14px; }
+  #formulario legend { font-size: 12px; font-weight: bold; color: #555; padding: 0 6px; }
+  #formulario label { display: block; font-size: 12px; margin: 8px 0 3px; color: #444; }
+  #formulario input, #formulario select {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid #ccc; border-radius: 4px;
+  }
+  .linha2 { display: flex; gap: 8px; }
+  .linha2 > div { flex: 1; }
+  #botoes { margin-top: 14px; display: flex; gap: 8px; }
+  button {
+    cursor: pointer; border: none; border-radius: 5px; padding: 10px 14px;
+    font-size: 13px; font-weight: bold;
+  }
+  #btnGerar { background: #2563eb; color: #fff; flex: 1; }
+  #btnImprimir { background: #16a34a; color: #fff; }
+  #resultado-wrapper { flex: 1; min-width: 0; }
+  .documento {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    max-width: 794px;
+    margin: 0 auto;
+    padding: 40px 48px;
+    min-height: 200px;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .documento p { margin: 0 0 10px; text-align: justify; }
+  .clausula-titulo { font-weight: bold; margin-top: 16px; }
+  .titulo-doc { font-weight: bold; text-align: center; margin-bottom: 16px; }
+  .assinatura { margin-top: 34px; }
+  .linha-assinatura { border-top: 1px solid #000; width: 320px; margin: 26px 0 2px; }
+  .nota {
+    border: 2px solid #000;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 0 0 16px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .nota-cabecalho { display: flex; justify-content: space-between; align-items: baseline; }
+  .nota-titulo { font-size: 15px; font-weight: bold; }
+  .nota-valor { text-align: center; font-size: 14px; font-weight: bold; margin: 8px 0; }
+  .nota-rodape { display: flex; justify-content: space-between; font-size: 11.5px; margin-top: 6px; }
+  .notas-secao-titulo { page-break-before: always; }
+  .vazio { color: #888; font-style: italic; padding: 40px; text-align: center; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    #formulario, #botoes, .no-print { display: none !important; }
+    .layout { display: block; }
+    .documento { box-shadow: none; max-width: none; padding: 0; }
+    .nota { break-inside: avoid; }
+  }
+  @page { size: A4; margin: 18mm 16mm; }
+</style>
+</head>
+<body>
+
+<h1>Gerador de Instrumento de Confissão de Dívida + Notas Promissórias</h1>
+
+<div class="layout">
+  <div id="formulario" class="no-print">
+    <fieldset>
+      <legend>Dados do DEVEDOR (novo cliente)</legend>
+
+      <label>Nome completo</label>
+      <input id="nomeDevedor" value="Raquel da Silva Cruge">
+
+      <div class="linha2">
+        <div>
+          <label>Nacionalidade</label>
+          <input id="nacionalidade" value="brasileira">
+        </div>
+        <div>
+          <label>Estado civil</label>
+          <select id="estadoCivil">
+            <option>solteiro(a)</option>
+            <option>casado(a)</option>
+            <option>divorciado(a)</option>
+            <option>viúvo(a)</option>
+            <option>em união estável</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Profissão</label>
+      <input id="profissao" value="bancária">
+
+      <label>CPF</label>
+      <input id="cpf" value="337.432.248-44">
+
+      <label>Endereço residencial completo</label>
+      <input id="enderecoResidencial" value="R. Antônio Lopes Meireles, 266 - Parque das Rosas, Cotia - SP, 06704-512">
+
+      <label>Endereço profissional (opcional)</label>
+      <input id="enderecoProfissional" value="Rua Volkswagen, nº 01, Jabaquara, São Paulo/SP, CEP 04344-902">
+    </fieldset>
+
+    <fieldset>
+      <legend>Dados da DÍVIDA</legend>
+
+      <div class="linha2">
+        <div>
+          <label>Valor total (R$)</label>
+          <input id="valorTotal" type="number" step="0.01" value="9660.00">
+        </div>
+        <div>
+          <label>Nº de parcelas</label>
+          <input id="numParcelas" type="number" min="1" value="6">
+        </div>
+      </div>
+
+      <label>Valor de cada parcela (deixe em branco para dividir automaticamente)</label>
+      <input id="valorParcela" type="number" step="0.01" placeholder="calculado automaticamente">
+
+      <div class="linha2">
+        <div>
+          <label>Vencimento da 1ª parcela</label>
+          <input id="dataPrimeiraParcela" type="date" value="2026-09-27">
+        </div>
+        <div>
+          <label>Data de emissão do contrato</label>
+          <input id="dataEmissao" type="date" value="2026-09-04">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Encargos, foro e testemunhas</legend>
+
+      <div class="linha2">
+        <div>
+          <label>Local</label>
+          <input id="local" value="Osasco">
+        </div>
+        <div>
+          <label>Foro (comarca)</label>
+          <input id="foro" value="Osasco/SP">
+        </div>
+      </div>
+
+      <div class="linha2">
+        <div>
+          <label>Juros mora (% a.m.)</label>
+          <input id="jurosMoraPct" type="number" step="0.01" value="1">
+        </div>
+        <div>
+          <label>Multa (%)</label>
+          <input id="multaPct" type="number" step="0.01" value="30">
+        </div>
+      </div>
+
+      <div class="linha2">
+        <div>
+          <label>Honorários (%)</label>
+          <input id="honorariosPct" type="number" step="0.01" value="20">
+        </div>
+        <div>
+          <label>Desconto rendimentos (%)</label>
+          <input id="descontoPct" type="number" step="0.01" value="30">
+        </div>
+      </div>
+
+      <label>Testemunha 1 - nome</label>
+      <input id="test1Nome" value="Caio Vinicius Antonino Rodrigues">
+      <label>Testemunha 1 - CPF</label>
+      <input id="test1Cpf" value="415.510.728-74">
+
+      <label>Testemunha 2 - nome</label>
+      <input id="test2Nome" value="Nilza de Oliveira Sartorato">
+      <label>Testemunha 2 - CPF</label>
+      <input id="test2Cpf" value="256.604.838-01">
+    </fieldset>
+
+    <div id="botoes">
+      <button id="btnGerar" onclick="gerar()">Gerar contrato e notas</button>
+      <button id="btnImprimir" onclick="window.print()">Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+
+  <div id="resultado-wrapper">
+    <div id="documento" class="documento">
+      <div class="vazio">Preencha os dados à esquerda e clique em "Gerar contrato e notas".</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Dados fixos do CREDOR (não mudam de cliente para cliente).
+// ---------------------------------------------------------------------------
+const CREDOR_NOME = "Sartorato Informações Cadastrais Ltda. ME";
+const CREDOR_CNPJ = "06.301.745/0001-77";
+const CREDOR_ENDERECO = "Rua Benedito Américo de Oliveira, nº 325, Vila Yara, Osasco/SP, CEP 06028-080";
+const CREDOR_SOCIO_NOME = "Rogério Sartorato";
+const CREDOR_SOCIO_QUALIFICACAO = "brasileiro, solteiro, empresário";
+const CREDOR_SOCIO_CPF = "206.301.208-38";
+const CREDOR_SOCIO_RG = "23.000.034-4";
+
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const LETRAS = "abcdefghijklmnopqrstuvwxyz";
+
+// ---------------------------------------------------------------------------
+// Números e datas por extenso
+// ---------------------------------------------------------------------------
+const UNIDADES = ['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove'];
+const DEZ_A_DEZENOVE = ['dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+const DEZENAS = ['','dez','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+const CENTENAS = ['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+
+function grupoPorExtenso(n) {
+  if (n === 0) return '';
+  if (n === 100) return 'cem';
+  const c = Math.floor(n / 100);
+  const r = n % 100;
+  const partes = [];
+  if (c) partes.push(CENTENAS[c]);
+  if (r) {
+    if (r < 10) partes.push(UNIDADES[r]);
+    else if (r < 20) partes.push(DEZ_A_DEZENOVE[r - 10]);
+    else {
+      const d = Math.floor(r / 10), u = r % 10;
+      partes.push(u ? `${DEZENAS[d]} e ${UNIDADES[u]}` : DEZENAS[d]);
+    }
+  }
+  return partes.join(' e ');
+}
+
+function numeroPorExtenso(num) {
+  num = Math.floor(num);
+  if (num === 0) return 'zero';
+  const milhoes = Math.floor(num / 1000000);
+  const milhares = Math.floor((num % 1000000) / 1000);
+  const unidades = num % 1000;
+
+  const grupos = [];
+  if (milhoes) grupos.push({ valor: milhoes, texto: milhoes === 1 ? 'um milhão' : `${grupoPorExtenso(milhoes)} milhões` });
+  if (milhares) grupos.push({ valor: milhares, texto: milhares === 1 ? 'mil' : `${grupoPorExtenso(milhares)} mil` });
+  if (unidades || grupos.length === 0) grupos.push({ valor: unidades, texto: grupoPorExtenso(unidades) || 'zero' });
+
+  if (grupos.length === 1) return grupos[0].texto;
+
+  const ultimo = grupos[grupos.length - 1];
+  const resto = grupos.slice(0, -1).map(g => g.texto);
+  const usaE = ultimo.valor < 100 || (ultimo.valor % 100 === 0);
+  return resto.join(', ') + (usaE ? ' e ' : ', ') + ultimo.texto;
+}
+
+function valorPorExtenso(valor) {
+  const reais = Math.floor(valor + 1e-9);
+  const centavos = Math.round((valor - reais) * 100);
+  let textoReais = numeroPorExtenso(reais);
+  if (reais >= 1000 && reais < 2000) textoReais = 'um ' + textoReais; // convenção bancária: explicita "um" antes de "mil"
+  const moedaReais = reais === 1 ? 'real' : 'reais';
+  let texto = `${textoReais} ${moedaReais}`;
+  if (centavos) {
+    const moedaCent = centavos === 1 ? 'centavo' : 'centavos';
+    texto += ` e ${numeroPorExtenso(centavos)} ${moedaCent}`;
+  }
+  return texto;
+}
+
+function dataPorExtenso(d) {
+  return `${numeroPorExtenso(d.getDate()).toUpperCase()} de ${MESES[d.getMonth()].toUpperCase()} de ${numeroPorExtenso(d.getFullYear()).toUpperCase()}`;
+}
+
+function formatarData(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+function formatarDataMesNome(d) {
+  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function formatarMoeda(v) {
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseDataInput(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+
+function addMonths(data, n) {
+  const dia = data.getDate();
+  const d = new Date(data.getFullYear(), data.getMonth(), 1);
+  d.setMonth(d.getMonth() + n);
+  const diasNoMes = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(dia, diasNoMes));
+  return d;
+}
+
+// ---------------------------------------------------------------------------
+// Cálculo das parcelas
+// ---------------------------------------------------------------------------
+function calcularParcelas(valorTotal, numParcelas, valorParcelaInformado, dataPrimeira) {
+  const valorBase = valorParcelaInformado ? round2(valorParcelaInformado) : round2(valorTotal / numParcelas);
+  const valores = new Array(numParcelas).fill(valorBase);
+  const soma = round2(valorBase * numParcelas);
+  const diferenca = round2(valorTotal - soma);
+  if (diferenca !== 0) valores[numParcelas - 1] = round2(valores[numParcelas - 1] + diferenca);
+
+  const parcelas = [];
+  for (let i = 0; i < numParcelas; i++) {
+    parcelas.push({ numero: i + 1, valor: valores[i], vencimento: addMonths(dataPrimeira, i) });
+  }
+  return parcelas;
+}
+
+// ---------------------------------------------------------------------------
+// Montagem do HTML do contrato
+// ---------------------------------------------------------------------------
+function montarContrato(d, parcelas) {
+  const n = d.numParcelas;
+  const nExtenso = numeroPorExtenso(n);
+
+  let qualificacaoDevedor = `${d.nomeDevedor}, ${d.nacionalidade}, ${d.estadoCivil}, ${d.profissao}, ` +
+    `portador(a) do CPF nº ${d.cpf}, residente e domiciliado(a) na ${d.enderecoResidencial}`;
+  if (d.enderecoProfissional) qualificacaoDevedor += `, possuindo domicílio profissional na ${d.enderecoProfissional}`;
+  qualificacaoDevedor += '.';
+
+  const clausulasParcelas = parcelas.map((p, i) =>
+    `${LETRAS[i]}) Nota Promissória ${String(p.numero).padStart(2, '0')}/${String(n).padStart(2, '0')} – ` +
+    `${formatarMoeda(p.valor)} – vencimento em ${formatarData(p.vencimento)};`
+  ).join('<br>');
+
+  return `
+<p class="titulo-doc">INSTRUMENTO PARTICULAR DE CONFISSÃO DE DÍVIDA, PARCELAMENTO E OUTRAS AVENÇAS</p>
+
+<p><b>CREDOR:</b> ${CREDOR_NOME}, inscrita no CNPJ nº ${CREDOR_CNPJ}, com sede na ${CREDOR_ENDERECO}, neste ato representada por seu sócio ${CREDOR_SOCIO_NOME}, ${CREDOR_SOCIO_QUALIFICACAO}, portador do CPF nº ${CREDOR_SOCIO_CPF} e RG nº ${CREDOR_SOCIO_RG}.</p>
+
+<p><b>DEVEDOR:</b> ${qualificacaoDevedor}</p>
+
+<p>As partes acima qualificadas celebram o presente INSTRUMENTO PARTICULAR DE CONFISSÃO DE DÍVIDA, PARCELAMENTO E OUTRAS AVENÇAS, que se regerá pelas cláusulas e condições seguintes.</p>
+
+<p class="clausula-titulo">CLÁUSULA PRIMEIRA – DA ORIGEM, CERTEZA E LIQUIDEZ DA DÍVIDA</p>
+<p>1.1. O DEVEDOR reconhece expressamente que é legítimo devedor do CREDOR em razão dos serviços de consultoria e assessoria financeira prestados pelo CREDOR.</p>
+<p>1.2. O DEVEDOR confessa, de forma irrevogável e irretratável, ser devedor da quantia líquida, certa, exigível e incontroversa de ${formatarMoeda(d.valorTotal)} (${valorPorExtenso(d.valorTotal)}).</p>
+<p>1.3. O DEVEDOR declara que firma o presente instrumento de livre e espontânea vontade, sem qualquer vício de consentimento, coação, erro, dolo ou estado de perigo, renunciando expressamente a alegações futuras nesse sentido.</p>
+<p>1.4. A presente confissão de dívida constitui novação apenas quanto à forma de pagamento, permanecendo íntegros os direitos creditórios do CREDOR até a quitação integral da obrigação.</p>
+
+<p class="clausula-titulo">CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO</p>
+<p>2.1. A dívida será liquidada mediante o pagamento de ${String(n).padStart(2, '0')} (${nExtenso}) parcelas sucessivas, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:</p>
+<p>${clausulasParcelas}</p>
+<p>2.2. As Notas Promissórias são emitidas em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.</p>
+<p>2.3. O pagamento de cada parcela será realizado mediante PIX para a chave CNPJ nº ${CREDOR_CNPJ}, de titularidade do CREDOR, até o final do dia do respectivo vencimento.</p>
+<p>2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do valor na conta do CREDOR, obrigando-se este a devolver ao DEVEDOR a respectiva Nota Promissória quitada.</p>
+
+<p class="clausula-titulo">CLÁUSULA TERCEIRA – DO VENCIMENTO ANTECIPADO</p>
+<p>3.1. O inadimplemento de qualquer parcela, ainda que parcial, acarretará automaticamente o vencimento antecipado das parcelas vincendas, tornando imediatamente exigível o saldo remanescente da dívida.</p>
+<p>3.2. Verificada a mora, independentemente de notificação judicial ou extrajudicial, poderá o CREDOR promover a cobrança integral do débito por todos os meios admitidos em direito.</p>
+
+<p class="clausula-titulo">CLÁUSULA QUARTA – DOS ENCARGOS DO INADIMPLEMENTO</p>
+<p>4.1. Em caso de atraso no pagamento de qualquer parcela, incidirão sobre o débito:</p>
+<p>I – Correção monetária pela Tabela Prática do Tribunal de Justiça do Estado de São Paulo – TJSP, ou índice que venha a substitui-la;<br>
+II – Juros moratórios de ${d.jurosMoraPct}% ao mês, calculados pro rata die.</p>
+<p>4.2. O inadimplemento de qualquer parcela implicará a resolução antecipada do parcelamento concedido e a incidência de multa penal compensatória correspondente a ${d.multaPct}% sobre o saldo devedor vencido e antecipadamente vencido, em razão da quebra do acordo firmado entre as partes.</p>
+<p>4.3. A multa prevista nesta cláusula possui natureza penal compensatória decorrente da rescisão do parcelamento por culpa exclusiva do DEVEDOR, não se confundindo com os juros moratórios e a atualização monetária.</p>
+<p>4.4. Em caso de cobrança judicial, o DEVEDOR responderá ainda pelas custas processuais, despesas de cobrança e honorários advocatícios contratuais equivalentes a ${d.honorariosPct}% sobre o débito atualizado.</p>
+
+<p class="clausula-titulo">CLÁUSULA QUINTA – DA AUTORIZAÇÃO DE DESCONTO EM RENDIMENTOS</p>
+<p>5.1. Em caso de mora e vencimento antecipado da obrigação, o DEVEDOR autoriza expressamente que eventual composição amigável ou judicial possa contemplar desconto mensal de até ${d.descontoPct}% de seus rendimentos líquidos, salários, verbas remuneratórias ou benefícios percebidos, até a integral liquidação da dívida.</p>
+<p>5.2. A presente autorização constitui manifestação inequívoca de vontade do DEVEDOR quanto à possibilidade de utilização de parcela de seus rendimentos para satisfação da obrigação, observados os limites legais e eventual determinação judicial quando necessária.</p>
+<p>5.3. O DEVEDOR reconhece que a presente obrigação possui origem contratual legítima, líquida e exigível, comprometendo-se a colaborar para sua satisfação integral.</p>
+
+<p class="clausula-titulo">CLÁUSULA SEXTA – DOS ÓRGÃOS DE PROTEÇÃO AO CRÉDITO</p>
+<p>6.1. Em caso de inadimplemento, o DEVEDOR autoriza a inscrição e manutenção de seu nome junto aos órgãos de proteção ao crédito, inclusive SPC, SERASA e congêneres, observados os requisitos legais.</p>
+
+<p class="clausula-titulo">CLÁUSULA SÉTIMA – DO TÍTULO EXECUTIVO EXTRAJUDICIAL</p>
+<p>7.1. Nos termos do artigo 784, inciso III, do Código de Processo Civil, o presente instrumento constitui título executivo extrajudicial, sendo a dívida líquida, certa e exigível.</p>
+<p>7.2. O DEVEDOR reconhece expressamente a exigibilidade do crédito e concorda que o CREDOR promova todas as medidas judiciais cabíveis para satisfação da obrigação em caso de inadimplemento.</p>
+
+<p class="clausula-titulo">CLÁUSULA OITAVA – DA TOLERÂNCIA</p>
+<p>8.1. Qualquer tolerância, concessão, atraso ou omissão do CREDOR no exercício de seus direitos não importará novação, renúncia ou alteração contratual, permanecendo íntegros todos os direitos previstos neste instrumento.</p>
+
+<p class="clausula-titulo">CLÁUSULA NONA – DA QUITAÇÃO</p>
+<p>9.1. O pagamento integral de todas as parcelas previstas neste instrumento implicará automática, plena, geral, irrevogável e irretratável quitação da dívida ora confessada.</p>
+
+<p class="clausula-titulo">CLÁUSULA DÉCIMA – DO FORO</p>
+<p>10.1. As partes elegem o Foro da Comarca de ${d.foro} para dirimir quaisquer controvérsias decorrentes deste instrumento, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+
+<p>E, por estarem justos e contratados, assinam o presente instrumento em conjunto com duas testemunhas.</p>
+
+<p>${d.local}, ${formatarData(d.dataEmissao)}.</p>
+
+<div class="assinatura">
+  <div class="linha-assinatura"></div>
+  <p>${CREDOR_NOME} – CREDOR</p>
+
+  <div class="linha-assinatura"></div>
+  <p>${d.nomeDevedor} - DEVEDOR</p>
+
+  <div class="linha-assinatura"></div>
+  <p>${d.test1Nome} – CPF ${d.test1Cpf} TESTEMUNHA</p>
+
+  <div class="linha-assinatura"></div>
+  <p>${d.test2Nome} – CPF ${d.test2Cpf} TESTEMUNHA</p>
+</div>
+`;
+}
+
+function montarNotas(d, parcelas) {
+  const n = d.numParcelas;
+  let html = '<p class="clausula-titulo notas-secao-titulo">NOTAS PROMISSÓRIAS</p>';
+  parcelas.forEach(p => {
+    const extensoVenc = dataPorExtenso(p.vencimento);
+    html += `
+<div class="nota">
+  <div class="nota-cabecalho">
+    <span class="nota-titulo">NOTA PROMISSÓRIA Nº #${p.numero}/${String(n).padStart(3, '0')}#</span>
+    <span>Vencimento: ${formatarDataMesNome(p.vencimento)}</span>
+  </div>
+  <div class="nota-valor">${formatarMoeda(p.valor)}</div>
+  <p>No dia ${extensoVenc} pagaremos por esta única via de NOTA PROMISSÓRIA a ${CREDOR_NOME.toUpperCase()} CNPJ ${CREDOR_CNPJ} ou à sua ordem a quantia de ${valorPorExtenso(p.valor).toUpperCase()} em moeda corrente desse país.</p>
+  <div class="nota-rodape">
+    <span>Local de pagamento: ${d.local}</span>
+    <span>Data da Emissão: ${formatarData(d.dataEmissao)}</span>
+  </div>
+  <p style="margin-top:6px;">Nome do Emitente: ${d.nomeDevedor.toUpperCase()}<br>
+  CPF: ${d.cpf} &nbsp; Endereço: ${d.enderecoResidencial}</p>
+</div>`;
+  });
+  return html;
+}
+
+// ---------------------------------------------------------------------------
+// Leitura do formulário e geração
+// ---------------------------------------------------------------------------
+function lerFormulario() {
+  const num = id => parseFloat(document.getElementById(id).value);
+  const txt = id => document.getElementById(id).value.trim();
+
+  const valorParcelaCampo = document.getElementById('valorParcela').value;
+
+  return {
+    nomeDevedor: txt('nomeDevedor'),
+    nacionalidade: txt('nacionalidade'),
+    estadoCivil: txt('estadoCivil'),
+    profissao: txt('profissao'),
+    cpf: txt('cpf'),
+    enderecoResidencial: txt('enderecoResidencial'),
+    enderecoProfissional: txt('enderecoProfissional'),
+    valorTotal: num('valorTotal'),
+    numParcelas: parseInt(document.getElementById('numParcelas').value, 10),
+    valorParcelaInformado: valorParcelaCampo ? parseFloat(valorParcelaCampo) : null,
+    dataPrimeiraParcela: parseDataInput(document.getElementById('dataPrimeiraParcela').value),
+    dataEmissao: parseDataInput(document.getElementById('dataEmissao').value),
+    local: txt('local'),
+    foro: txt('foro'),
+    jurosMoraPct: num('jurosMoraPct'),
+    multaPct: num('multaPct'),
+    honorariosPct: num('honorariosPct'),
+    descontoPct: num('descontoPct'),
+    test1Nome: txt('test1Nome'),
+    test1Cpf: txt('test1Cpf'),
+    test2Nome: txt('test2Nome'),
+    test2Cpf: txt('test2Cpf'),
+  };
+}
+
+function gerar() {
+  const d = lerFormulario();
+
+  if (!d.nomeDevedor || !d.cpf || !d.enderecoResidencial || !d.valorTotal || !d.numParcelas || !d.dataPrimeiraParcela || !d.dataEmissao) {
+    alert('Preencha ao menos: nome, CPF, endereço, valor total, nº de parcelas, vencimento da 1ª parcela e data de emissão.');
+    return;
+  }
+
+  const parcelas = calcularParcelas(d.valorTotal, d.numParcelas, d.valorParcelaInformado, d.dataPrimeiraParcela);
+
+  const html = montarContrato(d, parcelas) + montarNotas(d, parcelas);
+  document.getElementById('documento').innerHTML = html;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+saida/
+pipedrive/saida/
+*.log
+.env
+clientes.xlsx
