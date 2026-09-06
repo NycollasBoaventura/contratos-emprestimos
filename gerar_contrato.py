@@ -398,13 +398,15 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
             pdf.ln(3)
             continue
 
-        # Linha de "_____" vira um traço centralizado de verdade; a linha
-        # seguinte (nome/CPF de quem assina) também fica centralizada.
+        # Linha de "_____" vira um traço cinza de ponta a ponta (igual ao
+        # modelo); a linha seguinte (nome/CPF de quem assina) fica centralizada.
         if set(paragrafo.strip()) == {"_"}:
-            largura_linha = 80
-            x_centro = (pdf.w - largura_linha) / 2
             y = pdf.get_y() + 3
-            pdf.line(x_centro, y, x_centro + largura_linha, y)
+            pdf.set_draw_color(170, 170, 170)
+            pdf.set_line_width(0.4)
+            pdf.line(pdf.l_margin, y, pdf.w - pdf.r_margin, y)
+            pdf.set_draw_color(0, 0, 0)
+            pdf.set_line_width(0.2)
             pdf.ln(7)
             proxima_linha_e_assinatura = True
             continue
