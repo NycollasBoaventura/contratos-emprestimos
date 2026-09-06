@@ -166,7 +166,7 @@ def processar_deal(deal_id):
     parcelas = gc.calcular_parcelas(cliente)
     texto = gc.montar_texto_contrato(cliente, parcelas)
 
-    nome_arquivo = f"deal{deal_id}_{gc.slugify(cliente['nome_devedor'])}_{cliente['data_emissao'].strftime('%Y%m%d')}.pdf"
+    nome_arquivo = f"{gc.slugify(cliente['nome_devedor'])}_deal{deal_id}_{cliente['data_emissao'].strftime('%Y%m%d')}.pdf"
     caminho_pdf = PASTA_SAIDA / nome_arquivo
     gc.gerar_pdf_contrato(cliente, parcelas, texto, caminho_pdf)
 
