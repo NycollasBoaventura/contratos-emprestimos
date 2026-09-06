@@ -89,7 +89,6 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
     nome_devedor = obrigatorio(person.get("name"), "Nome (Person)")
     cpf = obrigatorio(person.get(cfg.CAMPO_CPF), "CPF (Person)")
     endereco_residencial = obrigatorio(person.get(cfg.CAMPO_ENDERECO_RESIDENCIAL), "Endereço Residencial (Person)")
-    valor_total = obrigatorio(deal.get("value"), "Valor (Deal)")
     num_parcelas_raw = obrigatorio(deal.get(cfg.CAMPO_NUM_PARCELAS), "Número de Parcelas (Deal)")
     data_primeira_raw = obrigatorio(deal.get(cfg.CAMPO_VENCIMENTO_1A_PARCELA), "Vencimento da 1ª Parcela (Deal)")
     valor_parcela_raw = obrigatorio(deal.get(cfg.CAMPO_VALOR_PARCELA), "Valor da Parcela (Deal)")
@@ -106,6 +105,10 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
             f"(cliente: {(nome_devedor or '?')[:1]}***, CPF {mascarar_cpf(cpf)})"
         )
 
+    num_parcelas = int(float(num_parcelas_raw))
+    valor_parcela = float(valor_parcela_raw)
+    valor_total = round(num_parcelas * valor_parcela, 2)
+
     cliente = {
         "linha_planilha": f"deal#{deal_id}",
         "nome_devedor": nome_devedor,
@@ -115,9 +118,9 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         "cpf_devedor": cpf,
         "endereco_residencial": endereco_residencial,
         "endereco_profissional": person.get(cfg.CAMPO_ENDERECO_COMERCIAL) or "",
-        "valor_total": float(valor_total),
-        "num_parcelas": int(float(num_parcelas_raw)),
-        "valor_parcela": float(valor_parcela_raw),
+        "valor_total": valor_total,
+        "num_parcelas": num_parcelas,
+        "valor_parcela": valor_parcela,
         "data_primeira_parcela": parse_data_pipedrive(data_primeira_raw),
         "data_emissao": date.today(),
         "local": gc.PADRAO_LOCAL,
