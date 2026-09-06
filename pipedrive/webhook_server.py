@@ -112,9 +112,12 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
     cliente = {
         "linha_planilha": f"deal#{deal_id}",
         "nome_devedor": nome_devedor,
-        "nacionalidade": "brasileira",
+        "nacionalidade": "brasileiro(a)",
         "estado_civil": estado_civil,
-        "profissao": person.get(cfg.CAMPO_CARGO_PROFISSAO) or "não informado(a)",
+        # Todo cliente que chega nesse stage é bancário — o campo "Cargo (função)"
+        # do Pipedrive guarda o cargo interno do banco (ex: "GTE REL UNICL DIG
+        # PREMIUM"), que não serve como profissão no contrato.
+        "profissao": "bancário(a)",
         "cpf_devedor": cpf,
         "endereco_residencial": endereco_residencial,
         "endereco_profissional": person.get(cfg.CAMPO_ENDERECO_COMERCIAL) or "",

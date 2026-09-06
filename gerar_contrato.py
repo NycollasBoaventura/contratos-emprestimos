@@ -133,6 +133,22 @@ def slugify(texto: str) -> str:
     return re.sub(r"[-\s]+", "_", texto)
 
 
+CONECTIVOS_NOME = {"da", "de", "do", "das", "dos", "e", "di", "du", "del", "van", "von", "y"}
+
+
+def formatar_nome_proprio(nome: str) -> str:
+    """'TALITA AZZI BUTTINI' -> 'Talita Azzi Buttini' (preposições em minúsculo)."""
+    palavras = str(nome).strip().split()
+    formatadas = []
+    for i, palavra in enumerate(palavras):
+        minuscula = palavra.lower()
+        if i > 0 and minuscula in CONECTIVOS_NOME:
+            formatadas.append(minuscula)
+        else:
+            formatadas.append("-".join(p[:1].upper() + p[1:] for p in minuscula.split("-")))
+    return " ".join(formatadas)
+
+
 # ---------------------------------------------------------------------------
 # Leitura da planilha
 # ---------------------------------------------------------------------------
@@ -182,7 +198,7 @@ def carregar_clientes(caminho_planilha: Path):
         cliente = {
             "linha_planilha": idx,
             "nome_devedor": nome_devedor,
-            "nacionalidade": valor_celula(row, headers, "nacionalidade", padrao="brasileira"),
+            "nacionalidade": valor_celula(row, headers, "nacionalidade", padrao="brasileiro(a)"),
             "estado_civil": valor_celula(row, headers, "estado_civil", padrao="solteira"),
             "profissao": valor_celula(row, headers, "profissao"),
             "cpf_devedor": valor_celula(row, headers, "cpf_devedor"),
@@ -257,8 +273,9 @@ def montar_clausula_parcelas(parcelas, n):
 def montar_texto_contrato(cliente, parcelas):
     n = cliente["num_parcelas"]
     n_extenso = numero_por_extenso(n)
+    nome_devedor = formatar_nome_proprio(cliente["nome_devedor"])
     qualificacao_devedor = (
-        f"{cliente['nome_devedor']}, {cliente['nacionalidade']}, {cliente['estado_civil']}, "
+        f"{nome_devedor}, {cliente['nacionalidade']}, {cliente['estado_civil']}, "
         f"{cliente['profissao']}, portador(a) do CPF nº {cliente['cpf_devedor']}, "
         f"residente e domiciliado(a) na {cliente['endereco_residencial']}"
     )
@@ -288,7 +305,7 @@ CLÁUSULA PRIMEIRA – DA ORIGEM, CERTEZA E LIQUIDEZ DA DÍVIDA
 
 CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO
 
-2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:
+2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {formata_moeda(parcelas[0]['valor'])} ({valor_por_extenso(parcelas[0]['valor'])}) cada, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:
 
 {clausulas_parcelas}
 
@@ -358,7 +375,7 @@ _________________________________________
 
 
 _________________________________________
-{cliente['nome_devedor']} - DEVEDOR
+{nome_devedor} - DEVEDOR
 
 
 _________________________________________

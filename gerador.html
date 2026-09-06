@@ -99,7 +99,7 @@
       <div class="linha2">
         <div>
           <label>Nacionalidade</label>
-          <input id="nacionalidade" value="brasileira">
+          <input id="nacionalidade" value="brasileiro(a)">
         </div>
         <div>
           <label>Estado civil</label>
@@ -114,7 +114,7 @@
       </div>
 
       <label>Profissão</label>
-      <input id="profissao" value="bancária">
+      <input id="profissao" value="bancário(a)">
 
       <label>CPF</label>
       <input id="cpf" value="337.432.248-44">
@@ -306,6 +306,16 @@ function formatarMoeda(v) {
   return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const CONECTIVOS_NOME = ['da', 'de', 'do', 'das', 'dos', 'e', 'di', 'du', 'del', 'van', 'von', 'y'];
+
+function formatarNomeProprio(nome) {
+  return String(nome).trim().split(/\s+/).map((palavra, i) => {
+    const minuscula = palavra.toLowerCase();
+    if (i > 0 && CONECTIVOS_NOME.includes(minuscula)) return minuscula;
+    return minuscula.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-');
+  }).join(' ');
+}
+
 function parseDataInput(str) {
   const [y, m, d] = str.split('-').map(Number);
   return new Date(y, m - 1, d);
@@ -348,7 +358,8 @@ function montarContrato(d, parcelas) {
   const n = d.numParcelas;
   const nExtenso = numeroPorExtenso(n);
 
-  let qualificacaoDevedor = `${d.nomeDevedor}, ${d.nacionalidade}, ${d.estadoCivil}, ${d.profissao}, ` +
+  const nomeDevedor = formatarNomeProprio(d.nomeDevedor);
+  let qualificacaoDevedor = `${nomeDevedor}, ${d.nacionalidade}, ${d.estadoCivil}, ${d.profissao}, ` +
     `portador(a) do CPF nº ${d.cpf}, residente e domiciliado(a) na ${d.enderecoResidencial}`;
   if (d.enderecoProfissional) qualificacaoDevedor += `, possuindo domicílio profissional na ${d.enderecoProfissional}`;
   qualificacaoDevedor += '.';
@@ -374,7 +385,7 @@ function montarContrato(d, parcelas) {
 <p>1.4. A presente confissão de dívida constitui novação apenas quanto à forma de pagamento, permanecendo íntegros os direitos creditórios do CREDOR até a quitação integral da obrigação.</p>
 
 <p class="clausula-titulo">CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO</p>
-<p>2.1. A dívida será liquidada mediante o pagamento de ${String(n).padStart(2, '0')} (${nExtenso}) parcelas sucessivas, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:</p>
+<p>2.1. A dívida será liquidada mediante o pagamento de ${String(n).padStart(2, '0')} (${nExtenso}) parcelas sucessivas no valor de ${formatarMoeda(parcelas[0].valor)} (${valorPorExtenso(parcelas[0].valor)}) cada, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:</p>
 <p>${clausulasParcelas}</p>
 <p>2.2. As Notas Promissórias são emitidas em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.</p>
 <p>2.3. O pagamento de cada parcela será realizado mediante PIX para a chave CNPJ nº ${CREDOR_CNPJ}, de titularidade do CREDOR, até o final do dia do respectivo vencimento.</p>
@@ -422,7 +433,7 @@ II – Juros moratórios de ${d.jurosMoraPct}% ao mês, calculados pro rata die.
   <p>${CREDOR_NOME} – CREDOR</p>
 
   <div class="linha-assinatura"></div>
-  <p>${d.nomeDevedor} - DEVEDOR</p>
+  <p>${nomeDevedor} - DEVEDOR</p>
 
   <div class="linha-assinatura"></div>
   <p>${d.test1Nome} – CPF ${d.test1Cpf} TESTEMUNHA</p>
