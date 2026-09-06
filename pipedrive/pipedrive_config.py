@@ -39,3 +39,13 @@ OPCOES_ESTADO_CIVIL = {
     16: "casado(a)",
     17: "solteiro(a)",
 }
+
+# Domicílio profissional do devedor: endereço fixo da sede do banco, definido
+# pela Organização vinculada ao Deal (o campo "Endereço Comercial" da Person
+# quase nunca vem preenchido). Chave = id da Organização no Pipedrive.
+ENDERECOS_BANCOS = {
+    21: "Praça Alfredo Egydio de Souza Aranha, 100 - Jabaquara, São Paulo, 04344-902",       # *Itaú
+    25: "R. Aurora Soares Barbosa, 775 - Vila Campesina, Osasco - SP, 06023-010",            # *Bradesco
+    13: "Av. Presidente Juscelino Kubitscheck, 2235 - Vila Olímpia, São Paulo - SP, 13571-410",  # *Santander
+    14: "Av. Paulista, 2100 - Cerqueira César - São Paulo - SP, 01310-930",                  # *Safra
+}

@@ -78,6 +78,13 @@ def parse_data_pipedrive(valor):
     return datetime.strptime(valor, "%Y-%m-%d").date()
 
 
+def endereco_profissional_do_banco(deal, person):
+    """Sede do banco onde o devedor trabalha, a partir da Organização do Deal."""
+    org = deal.get("org_id") or person.get("org_id") or {}
+    org_id = org.get("value") if isinstance(org, dict) else org
+    return cfg.ENDERECOS_BANCOS.get(org_id, "")
+
+
 def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
     faltando = []
 
@@ -120,7 +127,7 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         "profissao": "bancário(a)",
         "cpf_devedor": cpf,
         "endereco_residencial": endereco_residencial,
-        "endereco_profissional": person.get(cfg.CAMPO_ENDERECO_COMERCIAL) or "",
+        "endereco_profissional": endereco_profissional_do_banco(deal, person),
         "valor_total": valor_total,
         "num_parcelas": num_parcelas,
         "valor_parcela": valor_parcela,
