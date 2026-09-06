@@ -99,8 +99,8 @@ def formata_data(d: date) -> str:
 
 
 def formata_data_mes_nome(d: date) -> str:
-    """Ex.: 27 de Setembro de 2026"""
-    return f"{d.day} de {MESES[d.month - 1].capitalize()} de {d.year}"
+    """Ex.: 04 de Setembro de 2026"""
+    return f"{d.day:02d} de {MESES[d.month - 1].capitalize()} de {d.year}"
 
 
 def add_meses(d: date, n: int) -> date:
@@ -367,7 +367,7 @@ CLÁUSULA DÉCIMA – DO FORO
 
 E, por estarem justos e contratados, assinam o presente instrumento em conjunto com duas testemunhas.
 
-{cliente['local']}, {formata_data(cliente['data_emissao'])}.
+{cliente['local']}, {formata_data_mes_nome(cliente['data_emissao'])}.
 
 
 _________________________________________

@@ -299,7 +299,7 @@ function formatarData(d) {
 }
 
 function formatarDataMesNome(d) {
-  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, '0')} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
 function formatarMoeda(v) {
@@ -426,7 +426,7 @@ II – Juros moratórios de ${d.jurosMoraPct}% ao mês, calculados pro rata die.
 
 <p>E, por estarem justos e contratados, assinam o presente instrumento em conjunto com duas testemunhas.</p>
 
-<p>${d.local}, ${formatarData(d.dataEmissao)}.</p>
+<p>${d.local}, ${formatarDataMesNome(d.dataEmissao)}.</p>
 
 <div class="assinatura">
   <div class="linha-assinatura"></div>
