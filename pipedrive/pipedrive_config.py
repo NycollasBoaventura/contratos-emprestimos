@@ -17,7 +17,8 @@ BASE_URL = f"https://{DOMINIO}.pipedrive.com/api/v1"
 WEBHOOK_BASIC_USER = os.environ.get("WEBHOOK_BASIC_USER", "")
 WEBHOOK_BASIC_PASS = os.environ.get("WEBHOOK_BASIC_PASS", "")
 
-# Pipeline "Bancários" e o novo stage que dispara a geração do contrato.
+# Pipeline "Bancários" e o stage "Formalização" (id=45) que dispara a geração do contrato.
+# O nome do stage já mudou (era "Contratos/Promissória"), mas o id numérico não muda com o rename.
 PIPELINE_BANCARIOS_ID = 1
 STAGE_CONTRATOS_PROMISSORIA_ID = 45
 
