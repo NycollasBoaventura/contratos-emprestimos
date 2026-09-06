@@ -30,6 +30,7 @@ def criar(url_base):
         "event_object": "deal",
         "http_auth_user": cfg.WEBHOOK_BASIC_USER,
         "http_auth_password": cfg.WEBHOOK_BASIC_PASS,
+        "version": "1.0",
     }
     r = requests.post(f"{cfg.BASE_URL}/webhooks", params={"api_token": cfg.TOKEN}, json=payload, timeout=30)
     d = r.json()
