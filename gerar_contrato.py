@@ -392,23 +392,38 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     pdf.set_text_color(0, 0, 0)
 
     altura_linha = 5.6
+    proxima_linha_e_assinatura = False
     for paragrafo in limpar_para_pdf(texto_contrato).split("\n"):
         if paragrafo.strip() == "":
             pdf.ln(3)
             continue
+
+        # Linha de "_____" vira um traço centralizado de verdade; a linha
+        # seguinte (nome/CPF de quem assina) também fica centralizada.
+        if set(paragrafo.strip()) == {"_"}:
+            largura_linha = 80
+            x_centro = (pdf.w - largura_linha) / 2
+            y = pdf.get_y() + 3
+            pdf.line(x_centro, y, x_centro + largura_linha, y)
+            pdf.ln(7)
+            proxima_linha_e_assinatura = True
+            continue
+
         negrito = paragrafo.startswith("CLÁUSULA") or paragrafo.startswith("INSTRUMENTO")
         pdf.set_font("Helvetica", style="B" if negrito else "", size=10.5)
+        alinhamento = "C" if proxima_linha_e_assinatura else "J"
+        proxima_linha_e_assinatura = False
 
         # Não deixa uma cláusula começar numa página e ser cortada na outra:
         # mede quantas linhas o parágrafo vai ocupar e, se não couber no
         # espaço restante da página atual, pula pra próxima página inteira.
-        linhas = pdf.multi_cell(0, altura_linha, paragrafo, dry_run=True, output="LINES")
+        linhas = pdf.multi_cell(0, altura_linha, paragrafo, align=alinhamento, dry_run=True, output="LINES")
         altura_paragrafo = len(linhas) * altura_linha
         espaco_restante = pdf.h - pdf.b_margin - pdf.get_y()
         if altura_paragrafo > espaco_restante:
             pdf.add_page()
 
-        pdf.multi_cell(0, altura_linha, paragrafo)
+        pdf.multi_cell(0, altura_linha, paragrafo, align=alinhamento)
         pdf.ln(1)
 
     # --- Notas Promissórias (sempre 3 por página, igual ao modelo original) ---
