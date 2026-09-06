@@ -380,10 +380,7 @@ class ContratoPDF(FPDF):
         pass
 
     def footer(self):
-        self.set_y(-12)
-        self.set_font("Helvetica", size=8)
-        self.set_text_color(120, 120, 120)
-        self.cell(0, 8, f"Página {self.page_no()}", align="C")
+        pass
 
 
 def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
