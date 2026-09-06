@@ -27,7 +27,7 @@ from flask import Flask, jsonify, request
 
 sys.path.insert(0, str(Path(__file__).parent.parent))  # para importar gerar_contrato.py
 import gerar_contrato as gc
-import pipedrive_config as cfg
+from pipedrive import pipedrive_config as cfg
 
 app = Flask(__name__)
 
