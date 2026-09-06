@@ -394,30 +394,42 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     pdf.set_font("Helvetica", size=10.5)
     pdf.set_text_color(0, 0, 0)
 
+    altura_linha = 5.6
     for paragrafo in limpar_para_pdf(texto_contrato).split("\n"):
         if paragrafo.strip() == "":
             pdf.ln(3)
             continue
         negrito = paragrafo.startswith("CLÁUSULA") or paragrafo.startswith("INSTRUMENTO")
         pdf.set_font("Helvetica", style="B" if negrito else "", size=10.5)
-        pdf.multi_cell(0, 5.6, paragrafo)
+
+        # Não deixa uma cláusula começar numa página e ser cortada na outra:
+        # mede quantas linhas o parágrafo vai ocupar e, se não couber no
+        # espaço restante da página atual, pula pra próxima página inteira.
+        linhas = pdf.multi_cell(0, altura_linha, paragrafo, dry_run=True, output="LINES")
+        altura_paragrafo = len(linhas) * altura_linha
+        espaco_restante = pdf.h - pdf.b_margin - pdf.get_y()
+        if altura_paragrafo > espaco_restante:
+            pdf.add_page()
+
+        pdf.multi_cell(0, altura_linha, paragrafo)
         pdf.ln(1)
 
-    # --- Notas Promissórias ---
+    # --- Notas Promissórias (sempre 3 por página, igual ao modelo original) ---
     n = cliente["num_parcelas"]
-    for p in parcelas:
-        if pdf.get_y() > 230:
+    pdf.add_page()
+    for idx, p in enumerate(parcelas):
+        if idx > 0 and idx % 3 == 0:
             pdf.add_page()
         y0 = pdf.get_y()
         x0 = pdf.l_margin
         largura = pdf.w - pdf.l_margin - pdf.r_margin
-        altura = 62
+        altura = 68
         pdf.rect(x0, y0, largura, altura)
         pdf.set_xy(x0 + 4, y0 + 4)
         pdf.set_font("Helvetica", style="B", size=13)
         pdf.cell(60, 8, "NOTA PROMISSÓRIA")
         pdf.set_font("Helvetica", size=10)
-        pdf.cell(40, 8, f"Nº #{p['numero']}/{n:03d}#")
+        pdf.cell(40, 8, f"Nº {p['numero']:02d}/{n:02d}")
         pdf.cell(0, 8, f"Vencimento: {formata_data_mes_nome(p['vencimento'])}", align="R")
 
         pdf.set_xy(x0 + 4, y0 + 13)
@@ -427,24 +439,39 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.set_xy(x0 + 4, y0 + 22)
         pdf.set_font("Helvetica", size=9.5)
         extenso_venc = data_por_extenso(p["vencimento"])
+        dia_ext, mes_ext, ano_ext = extenso_venc.split(" de ")
         texto_nota = (
-            f"No dia {extenso_venc.split(' de ')[0]} de {extenso_venc.split(' de ')[1]} de "
-            f"{extenso_venc.split(' de ')[2]} pagaremos por esta única via de NOTA PROMISSÓRIA a "
-            f"{CREDOR_NOME.upper()} CNPJ {CREDOR_CNPJ} ou à sua ordem a quantia de "
-            f"{valor_por_extenso(p['valor']).upper()} em moeda corrente desse país."
+            f"No dia **{dia_ext}** de **{mes_ext}** de **{ano_ext}** pagaremos por esta única via de "
+            f"**NOTA PROMISSÓRIA** a **{CREDOR_NOME.upper()}** CNPJ **{CREDOR_CNPJ}** ou à sua ordem a "
+            f"quantia de **{valor_por_extenso(p['valor']).upper()}** em moeda corrente desse país."
         )
-        pdf.multi_cell(largura - 8, 4.6, texto_nota)
+        pdf.multi_cell(largura - 8, 4.6, texto_nota, markdown=True)
 
         pdf.set_xy(x0 + 4, y0 + 42)
         pdf.set_font("Helvetica", size=9)
-        pdf.cell(0, 5, f"Local de pagamento: {cliente['local']}    Data da Emissão: {formata_data(cliente['data_emissao'])}")
+        pdf.cell(
+            95, 5,
+            f"Local de pagamento: **{cliente['local']}**",
+            markdown=True,
+        )
+        pdf.cell(
+            0, 5,
+            f"Data da Emissão: **{formata_data(cliente['data_emissao'])}**",
+            markdown=True,
+        )
         pdf.set_xy(x0 + 4, y0 + 47)
-        pdf.cell(0, 5, f"Nome do Emitente: {cliente['nome_devedor'].upper()}")
+        pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
         pdf.set_xy(x0 + 4, y0 + 52)
         pdf.multi_cell(
             largura - 8, 4.6,
-            f"CPF: {cliente['cpf_devedor']}   Endereço: {cliente['endereco_residencial']}",
+            f"CPF: **{cliente['cpf_devedor']}**   Endereço: **{cliente['endereco_residencial']}**",
+            markdown=True,
         )
+
+        pdf.line(x0 + 4, y0 + altura - 6, x0 + largura - 4, y0 + altura - 6)
+        pdf.set_xy(x0 + 4, y0 + altura - 5)
+        pdf.set_font("Helvetica", size=9)
+        pdf.cell(largura - 8, 5, "Assinatura do Emitente", align="C")
 
         pdf.set_y(y0 + altura + 6)
 

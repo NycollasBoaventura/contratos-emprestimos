@@ -50,7 +50,7 @@
     font-size: 12.5px;
     line-height: 1.5;
   }
-  .documento p { margin: 0 0 10px; text-align: justify; }
+  .documento p { margin: 0 0 10px; text-align: justify; break-inside: avoid; page-break-inside: avoid; }
   .clausula-titulo { font-weight: bold; margin-top: 16px; }
   .titulo-doc { font-weight: bold; text-align: center; margin-bottom: 16px; }
   .assinatura { margin-top: 34px; }
@@ -67,7 +67,10 @@
   .nota-titulo { font-size: 15px; font-weight: bold; }
   .nota-valor { text-align: center; font-size: 14px; font-weight: bold; margin: 8px 0; }
   .nota-rodape { display: flex; justify-content: space-between; font-size: 11.5px; margin-top: 6px; }
+  .nota-assinatura-linha { border-top: 1px solid #000; margin-top: 22px; }
+  .nota-assinatura-label { text-align: center; font-size: 11.5px; margin: 2px 0 0; }
   .notas-secao-titulo { page-break-before: always; }
+  .nota-quebra-pagina { page-break-before: always; break-before: page; }
   .vazio { color: #888; font-style: italic; padding: 40px; text-align: center; }
 
   @media print {
@@ -432,12 +435,13 @@ II – Juros moratórios de ${d.jurosMoraPct}% ao mês, calculados pro rata die.
 function montarNotas(d, parcelas) {
   const n = d.numParcelas;
   let html = '<p class="clausula-titulo notas-secao-titulo">NOTAS PROMISSÓRIAS</p>';
-  parcelas.forEach(p => {
+  parcelas.forEach((p, idx) => {
     const extensoVenc = dataPorExtenso(p.vencimento);
+    const quebraPagina = idx > 0 && idx % 3 === 0;
     html += `
-<div class="nota">
+<div class="nota${quebraPagina ? ' nota-quebra-pagina' : ''}">
   <div class="nota-cabecalho">
-    <span class="nota-titulo">NOTA PROMISSÓRIA Nº #${p.numero}/${String(n).padStart(3, '0')}#</span>
+    <span class="nota-titulo">NOTA PROMISSÓRIA Nº ${String(p.numero).padStart(2, '0')}/${String(n).padStart(2, '0')}</span>
     <span>Vencimento: ${formatarDataMesNome(p.vencimento)}</span>
   </div>
   <div class="nota-valor">${formatarMoeda(p.valor)}</div>
@@ -448,6 +452,8 @@ function montarNotas(d, parcelas) {
   </div>
   <p style="margin-top:6px;">Nome do Emitente: ${d.nomeDevedor.toUpperCase()}<br>
   CPF: ${d.cpf} &nbsp; Endereço: ${d.enderecoResidencial}</p>
+  <div class="nota-assinatura-linha"></div>
+  <p class="nota-assinatura-label">Assinatura do Emitente</p>
 </div>`;
   });
   return html;
