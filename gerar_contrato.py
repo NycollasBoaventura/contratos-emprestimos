@@ -591,7 +591,7 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.set_xy(x0 + 4, y0 + 51)
         pdf.cell(
             0, 5,
-            f"**{cliente['nome_devedor'].upper()}**, CPF: **{cliente['cpf_devedor']}**",
+            f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**, CPF: **{cliente['cpf_devedor']}**",
             markdown=True,
         )
         pdf.set_xy(x0 + 4, y0 + 58)
