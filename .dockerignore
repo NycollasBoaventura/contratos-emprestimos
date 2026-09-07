@@ -4,5 +4,4 @@ saida/
 pipedrive/saida/
 pipedrive/*.log
 clientes.xlsx
-gerador.html
 .git/
