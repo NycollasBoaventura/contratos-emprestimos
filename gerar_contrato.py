@@ -453,7 +453,7 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     pdf.set_margins(20, 18, 20)
     fonte = registrar_fonte(pdf)
     pdf.add_page()
-    pdf.set_font(fonte, size=10.5)
+    pdf.set_font(fonte, size=8.5)
     pdf.set_text_color(0, 0, 0)
 
     altura_linha = 5.3
@@ -496,7 +496,7 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         negrito = paragrafo.startswith("INSTRUMENTO") or paragrafo.startswith(
             CLAUSULAS_EM_NEGRITO
         )
-        pdf.set_font(fonte, style="B" if negrito else "", size=10.5)
+        pdf.set_font(fonte, style="B" if negrito else "", size=8.5)
         alinhamento = "C" if proxima_linha_e_assinatura else "J"
         proxima_linha_e_assinatura = False
 
