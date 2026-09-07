@@ -127,7 +127,10 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         numeros_cheques_raw = obrigatorio(
             person.get(cfg.CAMPO_NUMEROS_CHEQUES), "Números dos Cheques (Person)"
         )
-        banco_cheque = obrigatorio(person.get(cfg.CAMPO_BANCO_CHEQUE), "Banco (Cheque) (Person)")
+        banco_raw = obrigatorio(person.get(cfg.CAMPO_BANCO_CHEQUE), "Banco (Cheque) (Person)")
+        banco_cheque = cfg.OPCOES_BANCO_CHEQUE.get(
+            int(str(banco_raw).split(",")[0]) if banco_raw else None, ""
+        )
         agencia_cheque = obrigatorio(person.get(cfg.CAMPO_AGENCIA_CHEQUE), "Agência (Cheque) (Person)")
         conta_cheque = obrigatorio(person.get(cfg.CAMPO_CONTA_CHEQUE), "Conta (Cheque) (Person)")
 

@@ -310,7 +310,7 @@ def montar_clausula_parcelas(parcelas, n, tipo_garantia=PROMISSORIA, cheques=Non
     for i, (p, letra) in enumerate(zip(parcelas, letras)):
         final = "." if p["numero"] == n else ";"
         if tipo_garantia == CHEQUE:
-            titulo = f"Cheque nº {cheques[i]}"
+            titulo = f"cheque nº {cheques[i]}"
         else:
             titulo = f"Nota Promissória {p['numero']:02d}/{n:02d}"
         linhas.append(
@@ -330,15 +330,15 @@ def montar_clausula_segunda(cliente, parcelas, n, n_extenso):
         lista = "\n".join(
             montar_clausula_parcelas(parcelas, n, CHEQUE, cliente["cheques"])
         )
-        return f"""2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {valor_parcela} ({valor_parcela_extenso}) cada, representadas por Cheques emitidos pelo DEVEDOR, sacados sobre o Banco {cliente['banco_cheque']}, agência {cliente['agencia_cheque']}, conta {cliente['conta_cheque']}, com os seguintes vencimentos:
+        return f"""2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {valor_parcela} ({valor_parcela_extenso}) cada, representadas por cheques emitidos pelo DEVEDOR, sacados sobre o Banco {cliente['banco_cheque']}, Agência {cliente['agencia_cheque']}, Conta {cliente['conta_cheque']}, com os seguintes vencimentos:
 
 {lista}
 
-2.2. Os Cheques são emitidos em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.
+2.2. Os cheques são emitidos em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.
 
-2.3. Cada Cheque será apresentado pelo CREDOR na respectiva data de vencimento, obrigando-se o DEVEDOR a manter em conta fundos suficientes para sua liquidação.
+2.3. Cada cheque será apresentado pelo CREDOR na respectiva data de vencimento, obrigando-se o DEVEDOR a manter em conta fundos suficientes para sua liquidação.
 
-2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do Cheque na conta do CREDOR."""
+2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do cheque na conta do CREDOR."""
 
     lista = "\n".join(montar_clausula_parcelas(parcelas, n))
     return f"""2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {valor_parcela} ({valor_parcela_extenso}) cada, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:
