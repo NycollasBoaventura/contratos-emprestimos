@@ -23,15 +23,23 @@ SERVIDOR_LOCAL = "http://localhost:5050/webhook/pipedrive"
 
 
 def preencher_campos_teste(deal_id):
+    """Preenche o parcelamento na Person vinculada ao deal (é lá que os campos vivem)."""
     from datetime import date, timedelta
-    vencimento = (date.today() + timedelta(days=30)).isoformat()
+
+    deal = requests.get(
+        f"{cfg.BASE_URL}/deals/{deal_id}", params={"api_token": cfg.TOKEN}, timeout=30
+    ).json()["data"]
+    person_id = (deal.get("person_id") or {}).get("value")
+    if not person_id:
+        raise RuntimeError(f"Deal #{deal_id} não tem Person vinculada.")
+
     payload = {
         cfg.CAMPO_NUM_PARCELAS: 6,
-        cfg.CAMPO_VENCIMENTO_1A_PARCELA: vencimento,
-        # CAMPO_VALOR_PARCELA fica em branco de propósito, pra testar o cálculo automático
+        cfg.CAMPO_VENCIMENTO_1A_PARCELA: (date.today() + timedelta(days=30)).isoformat(),
+        cfg.CAMPO_VALOR_PARCELA: 500,
     }
     r = requests.put(
-        f"{cfg.BASE_URL}/deals/{deal_id}",
+        f"{cfg.BASE_URL}/persons/{person_id}",
         params={"api_token": cfg.TOKEN},
         json=payload,
         timeout=30,
@@ -40,7 +48,7 @@ def preencher_campos_teste(deal_id):
     d = r.json()
     if not d.get("success"):
         raise RuntimeError(f"Falha ao preencher campos de teste: {d}")
-    print(f"[OK] Campos de teste preenchidos no deal #{deal_id}: {payload}")
+    print(f"[OK] Campos de teste preenchidos na person #{person_id}: {payload}")
 
 
 def simular(deal_id):

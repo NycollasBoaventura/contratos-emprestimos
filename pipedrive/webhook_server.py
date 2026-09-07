@@ -96,9 +96,9 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
     nome_devedor = obrigatorio(person.get("name"), "Nome (Person)")
     cpf = obrigatorio(person.get(cfg.CAMPO_CPF), "CPF (Person)")
     endereco_residencial = obrigatorio(person.get(cfg.CAMPO_ENDERECO_RESIDENCIAL), "Endereço Residencial (Person)")
-    num_parcelas_raw = obrigatorio(deal.get(cfg.CAMPO_NUM_PARCELAS), "Número de Parcelas (Deal)")
-    data_primeira_raw = obrigatorio(deal.get(cfg.CAMPO_VENCIMENTO_1A_PARCELA), "Vencimento da 1ª Parcela (Deal)")
-    valor_parcela_raw = obrigatorio(deal.get(cfg.CAMPO_VALOR_PARCELA), "Valor da Parcela (Deal)")
+    num_parcelas_raw = obrigatorio(person.get(cfg.CAMPO_NUM_PARCELAS), "Número de Parcelas (Person)")
+    data_primeira_raw = obrigatorio(person.get(cfg.CAMPO_VENCIMENTO_1A_PARCELA), "Vencimento da 1ª Parcela (Person)")
+    valor_parcela_raw = obrigatorio(person.get(cfg.CAMPO_VALOR_PARCELA), "Valor da Parcela (Person)")
 
     estado_civil_raw = person.get(cfg.CAMPO_ESTADO_CIVIL)
     estado_civil = "solteiro(a)"
