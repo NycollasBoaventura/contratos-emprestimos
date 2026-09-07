@@ -30,6 +30,9 @@ PASTA_SAIDA = PASTA / "saida"
 # Se um dia o credor mudar, edite so aqui.
 # ---------------------------------------------------------------------------
 CREDOR_NOME = "Sartorato Informações Cadastrais Ltda. ME"
+# O modelo grafa o credor de formas diferentes na assinatura e na nota promissória.
+CREDOR_NOME_ASSINATURA = "Sartorato Informações Cadastrais LTDA. ME"
+CREDOR_NOME_NOTA = "SARTORATO INFORMAÇÕES CADASTRAIS LTDA ME"
 CREDOR_CNPJ = "06.301.745/0001-77"
 CREDOR_ENDERECO = "Rua Benedito Américo de Oliveira, nº 325, Vila Yara, Osasco/SP, CEP 06028-080"
 CREDOR_SOCIO_NOME = "Rogério Sartorato"
@@ -81,6 +84,14 @@ def numero_por_extenso(n: int) -> str:
     return num2words(n, lang="pt_BR")
 
 
+def percentual_por_extenso(pct) -> str:
+    """Ex.: 30 -> '30% (trinta por cento)'"""
+    inteiro = int(pct)
+    if inteiro == pct:
+        return f"{inteiro}% ({num2words(inteiro, lang='pt_BR')} por cento)"
+    return f"{pct}% ({num2words(pct, lang='pt_BR')} por cento)"
+
+
 def data_por_extenso(d: date) -> str:
     dia = num2words(d.day, lang="pt_BR").upper()
     mes = MESES[d.month - 1].upper()
@@ -113,9 +124,37 @@ def add_meses(d: date, n: int) -> date:
     return date(ano, mes, dia)
 
 
-def limpar_para_pdf(texto: str) -> str:
-    """A fonte core (Helvetica) do fpdf2 só suporta Latin-1; troca caracteres tipográficos
-    (travessão, aspas curvas, reticências) pelos equivalentes ASCII antes de renderizar."""
+# Fonte com suporte a Unicode, necessária para o travessão "–" do modelo.
+# Arial (Windows, no desenvolvimento) e Liberation Sans (container Linux) são
+# metricamente compatíveis, então o layout sai igual nos dois ambientes.
+FONTES_CANDIDATAS = [
+    ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf"),
+    ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+]
+
+
+def registrar_fonte(pdf) -> str:
+    """Registra a primeira fonte Unicode disponível; devolve o nome a usar.
+
+    Sem nenhuma delas, cai para a Helvetica embutida (que não suporta travessão,
+    daí a substituição em limpar_para_pdf).
+    """
+    for regular, negrito in FONTES_CANDIDATAS:
+        if Path(regular).exists() and Path(negrito).exists():
+            pdf.add_font("Documento", "", regular)
+            pdf.add_font("Documento", "B", negrito)
+            return "Documento"
+    return "Helvetica"
+
+
+def limpar_para_pdf(texto: str, fonte: str) -> str:
+    """A Helvetica embutida do fpdf2 só suporta Latin-1; nesse caso troca os
+    caracteres tipográficos pelos equivalentes ASCII para não quebrar."""
+    if fonte != "Helvetica":
+        return texto
     subs = {
         "–": "-", "—": "-",
         "‘": "'", "’": "'",
@@ -263,9 +302,10 @@ def montar_clausula_parcelas(parcelas, n):
     letras = "abcdefghijklmnopqrstuvwxyz"
     linhas = []
     for p, letra in zip(parcelas, letras):
+        final = "." if p["numero"] == n else ";"
         linhas.append(
             f"{letra}) Nota Promissória {p['numero']:02d}/{n:02d} – {formata_moeda(p['valor'])} – "
-            f"vencimento em {formata_data(p['vencimento'])};"
+            f"vencimento em {formata_data(p['vencimento'])}{final}"
         )
     return linhas
 
@@ -327,17 +367,17 @@ CLÁUSULA QUARTA – DOS ENCARGOS DO INADIMPLEMENTO
 
 I – Correção monetária pela Tabela Prática do Tribunal de Justiça do Estado de São Paulo – TJSP, ou índice que venha a substitui-la;
 
-II – Juros moratórios de {cliente['juros_mora_pct']}% ao mês, calculados pro rata die.
+II – Juros moratórios de {percentual_por_extenso(cliente['juros_mora_pct'])} ao mês, calculados pro rata die.
 
-4.2. O inadimplemento de qualquer parcela implicará a resolução antecipada do parcelamento concedido e a incidência de multa penal compensatória correspondente a {cliente['multa_pct']}% sobre o saldo devedor vencido e antecipadamente vencido, em razão da quebra do acordo firmado entre as partes.
+4.2. O inadimplemento de qualquer parcela implicará a resolução antecipada do parcelamento concedido e a incidência de multa penal compensatória correspondente a {percentual_por_extenso(cliente['multa_pct'])} sobre o saldo devedor vencido e antecipadamente vencido, em razão da quebra do acordo firmado entre as partes.
 
 4.3. A multa prevista nesta cláusula possui natureza penal compensatória decorrente da rescisão do parcelamento por culpa exclusiva do DEVEDOR, não se confundindo com os juros moratórios e a atualização monetária.
 
-4.4. Em caso de cobrança judicial, o DEVEDOR responderá ainda pelas custas processuais, despesas de cobrança e honorários advocatícios contratuais equivalentes a {cliente['honorarios_pct']}% sobre o débito atualizado.
+4.4. Em caso de cobrança judicial, o DEVEDOR responderá ainda pelas custas processuais, despesas de cobrança e honorários advocatícios contratuais equivalentes a {percentual_por_extenso(cliente['honorarios_pct'])} sobre o débito atualizado.
 
 CLÁUSULA QUINTA – DA AUTORIZAÇÃO DE DESCONTO EM RENDIMENTOS
 
-5.1. Em caso de mora e vencimento antecipado da obrigação, o DEVEDOR autoriza expressamente que eventual composição amigável ou judicial possa contemplar desconto mensal de até {cliente['desconto_rendimentos_pct']}% de seus rendimentos líquidos, salários, verbas remuneratórias ou benefícios percebidos, até a integral liquidação da dívida.
+5.1. Em caso de mora e vencimento antecipado da obrigação, o DEVEDOR autoriza expressamente que eventual composição amigável ou judicial possa contemplar desconto mensal de até {percentual_por_extenso(cliente['desconto_rendimentos_pct'])} de seus rendimentos líquidos, salários, verbas remuneratórias ou benefícios percebidos, até a integral liquidação da dívida.
 
 5.2. A presente autorização constitui manifestação inequívoca de vontade do DEVEDOR quanto à possibilidade de utilização de parcela de seus rendimentos para satisfação da obrigação, observados os limites legais e eventual determinação judicial quando necessária.
 
@@ -371,7 +411,7 @@ E, por estarem justos e contratados, assinam o presente instrumento em conjunto 
 
 
 _________________________________________
-{CREDOR_NOME} – CREDOR
+{CREDOR_NOME_ASSINATURA} – CREDOR
 
 
 _________________________________________
@@ -392,6 +432,9 @@ _________________________________________
 # PDF
 # ---------------------------------------------------------------------------
 
+CLAUSULAS_EM_NEGRITO = ("1.3.", "4.2.", "5.1.", "10.1.")
+
+
 class ContratoPDF(FPDF):
     def header(self):
         pass
@@ -404,18 +447,19 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     pdf = ContratoPDF(format="A4", unit="mm")
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_margins(20, 18, 20)
+    fonte = registrar_fonte(pdf)
     pdf.add_page()
-    pdf.set_font("Helvetica", size=10.5)
+    pdf.set_font(fonte, size=10.5)
     pdf.set_text_color(0, 0, 0)
 
-    altura_linha = 5.6
+    altura_linha = 5.3
     proxima_linha_e_assinatura = False
     primeira_assinatura = True
     # traço + nome de cada signatário ocupam ~20mm; são 4 signatários.
     ALTURA_BLOCO_ASSINATURAS = 85
-    for paragrafo in limpar_para_pdf(texto_contrato).split("\n"):
+    for paragrafo in limpar_para_pdf(texto_contrato, fonte).split("\n"):
         if paragrafo.strip() == "":
-            pdf.ln(3)
+            pdf.ln(2.5)
             continue
 
         # Linha de "_____" vira um traço cinza de ponta a ponta (igual ao
@@ -440,8 +484,12 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
             proxima_linha_e_assinatura = True
             continue
 
-        negrito = paragrafo.startswith("CLÁUSULA") or paragrafo.startswith("INSTRUMENTO")
-        pdf.set_font("Helvetica", style="B" if negrito else "", size=10.5)
+        # No modelo os títulos das cláusulas são em peso normal; o negrito é
+        # reservado para as cláusulas que impõem os ônus mais pesados ao devedor.
+        negrito = paragrafo.startswith("INSTRUMENTO") or paragrafo.startswith(
+            CLAUSULAS_EM_NEGRITO
+        )
+        pdf.set_font(fonte, style="B" if negrito else "", size=10.5)
         alinhamento = "C" if proxima_linha_e_assinatura else "J"
         proxima_linha_e_assinatura = False
 
@@ -470,39 +518,40 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         # A caixa cresce quando o endereço do emitente ocupa mais de uma linha,
         # senão o texto encostaria no traço da assinatura.
         texto_cpf_endereco = (
-            f"CPF: **{cliente['cpf_devedor']}**   Endereço: **{cliente['endereco_residencial']}**"
+            f"CPF: **{cliente['cpf_devedor']}**   "
+            f"Endereço: **{cliente['endereco_residencial'].upper()}**"
         )
-        pdf.set_font("Helvetica", size=9)
+        pdf.set_font(fonte, size=9)
         linhas_endereco = pdf.multi_cell(
             largura - 8, 4.6, texto_cpf_endereco, markdown=True, dry_run=True, output="LINES"
         )
-        altura = 68 + max(0, len(linhas_endereco) - 1) * 4.6
+        altura = 76 + max(0, len(linhas_endereco) - 1) * 4.6
 
         pdf.rect(x0, y0, largura, altura)
         pdf.set_xy(x0 + 4, y0 + 4)
-        pdf.set_font("Helvetica", style="B", size=13)
+        pdf.set_font(fonte, style="B", size=13)
         pdf.cell(60, 8, "NOTA PROMISSÓRIA")
-        pdf.set_font("Helvetica", size=10)
+        pdf.set_font(fonte, size=10)
         pdf.cell(40, 8, f"Nº {p['numero']:02d}/{n:02d}")
         pdf.cell(0, 8, f"Vencimento: {formata_data_mes_nome(p['vencimento'])}", align="R")
 
         pdf.set_xy(x0 + 4, y0 + 13)
-        pdf.set_font("Helvetica", style="B", size=12)
+        pdf.set_font(fonte, style="B", size=12)
         pdf.cell(0, 7, formata_moeda(p["valor"]), align="C")
 
         pdf.set_xy(x0 + 4, y0 + 22)
-        pdf.set_font("Helvetica", size=9.5)
+        pdf.set_font(fonte, size=9.5)
         extenso_venc = data_por_extenso(p["vencimento"])
         dia_ext, mes_ext, ano_ext = extenso_venc.split(" de ")
         texto_nota = (
             f"No dia **{dia_ext}** de **{mes_ext}** de **{ano_ext}** pagaremos por esta única via de "
-            f"**NOTA PROMISSÓRIA** a **{CREDOR_NOME.upper()}** CNPJ **{CREDOR_CNPJ}** ou à sua ordem a "
-            f"quantia de **{valor_por_extenso(p['valor']).upper()}** em moeda corrente desse país."
+            f"**NOTA PROMISSÓRIA** a **{CREDOR_NOME_NOTA}** CNPJ **{CREDOR_CNPJ}** ou à sua ordem a "
+            f"quantia de **{valor_por_extenso(p['valor']).upper()}** em moeda corrente desse país"
         )
         pdf.multi_cell(largura - 8, 4.6, texto_nota, markdown=True)
 
-        pdf.set_xy(x0 + 4, y0 + 42)
-        pdf.set_font("Helvetica", size=9)
+        pdf.set_xy(x0 + 4, y0 + 44)
+        pdf.set_font(fonte, size=9)
         pdf.cell(
             95, 5,
             f"Local de pagamento: **{cliente['local']}**",
@@ -513,16 +562,16 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
             f"Data da Emissão: **{formata_data(cliente['data_emissao'])}**",
             markdown=True,
         )
-        pdf.set_xy(x0 + 4, y0 + 47)
-        pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
         pdf.set_xy(x0 + 4, y0 + 52)
+        pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
+        pdf.set_xy(x0 + 4, y0 + 60)
         pdf.multi_cell(largura - 8, 4.6, texto_cpf_endereco, markdown=True)
 
         largura_traco_nota = 95
         x_traco_nota = x0 + (largura - largura_traco_nota) / 2
         pdf.line(x_traco_nota, y0 + altura - 6, x_traco_nota + largura_traco_nota, y0 + altura - 6)
         pdf.set_xy(x0 + 4, y0 + altura - 5)
-        pdf.set_font("Helvetica", size=9)
+        pdf.set_font(fonte, size=9)
         pdf.cell(largura - 8, 5, "Assinatura do Emitente", align="C")
 
         pdf.set_y(y0 + altura + 6)
