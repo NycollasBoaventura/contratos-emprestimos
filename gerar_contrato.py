@@ -459,8 +459,8 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     altura_linha = 5.3
     proxima_linha_e_assinatura = False
     primeira_assinatura = True
-    # traço + nome de cada signatário ocupam ~24mm; são 4 signatários.
-    ALTURA_BLOCO_ASSINATURAS = 95
+    # traço + nome de cada signatário ocupam ~17mm; são 4 signatários.
+    ALTURA_BLOCO_ASSINATURAS = 72
     for paragrafo in limpar_para_pdf(texto_contrato, fonte).split("\n"):
         if paragrafo.strip() == "":
             pdf.ln(2.5)
@@ -477,7 +477,7 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
                     pdf.add_page()
 
             # Espaço em branco acima do traço, para caber a assinatura à mão.
-            y = pdf.get_y() + 10
+            y = pdf.get_y() + 7
             largura_traco = 95
             x_inicio = (pdf.w - largura_traco) / 2
             pdf.set_draw_color(170, 170, 170)
