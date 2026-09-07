@@ -29,6 +29,7 @@ from flask import Flask, jsonify, request
 sys.path.insert(0, str(Path(__file__).parent.parent))  # para importar gerar_contrato.py
 import gerar_contrato as gc
 from pipedrive import pipedrive_config as cfg
+from pipedrive import consulta_credito
 
 app = Flask(__name__)
 
@@ -242,12 +243,69 @@ def processar_deal(deal_id):
     return {"pipedrive_file_id": anexo.get("id")}
 
 
-@app.route("/webhook/pipedrive", methods=["POST"])
-def webhook_pipedrive():
-    if not autenticacao_valida(request):
-        return jsonify({"erro": "não autorizado"}), 401
+def criar_nota_pessoa(person_id, conteudo):
+    r = requests.post(
+        f"{cfg.BASE_URL}/notes",
+        params={"api_token": cfg.TOKEN},
+        json={"person_id": person_id, "content": conteudo},
+        timeout=30,
+    )
+    r.raise_for_status()
+    resp = r.json()
+    if not resp.get("success"):
+        raise RuntimeError(f"Falha ao criar nota na person {person_id}: {resp}")
+    return resp["data"]
 
-    payload = request.get_json(force=True, silent=True) or {}
+
+def resetar_gatilho_consulta(person_id):
+    r = requests.put(
+        f"{cfg.BASE_URL}/persons/{person_id}",
+        params={"api_token": cfg.TOKEN},
+        json={cfg.CAMPO_CONSULTAR_SPC_SERASA: cfg.OPCAO_CONSULTAR_NAO},
+        timeout=30,
+    )
+    r.raise_for_status()
+
+
+def processar_consulta_credito(person_id):
+    person = pipedrive_get(f"/persons/{person_id}")
+    cpf = person.get(cfg.CAMPO_CPF)
+    if not cpf:
+        resultado = "Não foi possível consultar: essa Person não tem CPF preenchido."
+    else:
+        resultado = consulta_credito.consultar_tudo(cpf)
+
+    criar_nota_pessoa(person_id, resultado)
+    # Devolve o campo para "Não" pra poder disparar de novo no futuro
+    # (é um "botão", não deveria ficar marcado como se já tivesse sido lido).
+    resetar_gatilho_consulta(person_id)
+    return {"person_id": person_id, "resultado": resultado}
+
+
+def processar_evento_pessoa(payload):
+    current = payload.get("current") or {}
+    previous = payload.get("previous") or {}
+    person_id = current.get("id")
+
+    gatilho_atual = current.get(cfg.CAMPO_CONSULTAR_SPC_SERASA)
+    gatilho_anterior = previous.get(cfg.CAMPO_CONSULTAR_SPC_SERASA)
+
+    if gatilho_atual != cfg.OPCAO_CONSULTAR_SIM:
+        return jsonify({"ignorado": True, "motivo": "campo Consultar SPC/Serasa não é Sim"}), 200
+    if gatilho_anterior == cfg.OPCAO_CONSULTAR_SIM:
+        return jsonify({"ignorado": True, "motivo": "campo já estava em Sim (sem mudança)"}), 200
+    if not person_id:
+        return jsonify({"erro": "payload sem person id"}), 400
+
+    try:
+        resultado = processar_consulta_credito(person_id)
+        return jsonify({"ok": True, **resultado}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
+def processar_evento_deal(payload):
     current = payload.get("current") or {}
     previous = payload.get("previous") or {}
 
@@ -273,6 +331,19 @@ def webhook_pipedrive():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"ok": False, "erro": str(e)}), 500
+
+
+@app.route("/webhook/pipedrive", methods=["POST"])
+def webhook_pipedrive():
+    if not autenticacao_valida(request):
+        return jsonify({"erro": "não autorizado"}), 401
+
+    payload = request.get_json(force=True, silent=True) or {}
+    objeto = (payload.get("meta") or {}).get("object")
+
+    if objeto == "person":
+        return processar_evento_pessoa(payload)
+    return processar_evento_deal(payload)
 
 
 @app.route("/saude", methods=["GET"])

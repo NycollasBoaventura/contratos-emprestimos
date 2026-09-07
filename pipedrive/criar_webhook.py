@@ -8,9 +8,13 @@ Uso:
   $env:WEBHOOK_BASIC_USER = "usuario_forte"
   $env:WEBHOOK_BASIC_PASS = "senha_forte_aleatoria"
 
-  python criar_webhook.py criar <url_do_cloud_run>
+  python criar_webhook.py criar <url_do_cloud_run> [deal|person]
   python criar_webhook.py listar
   python criar_webhook.py remover <webhook_id>
+
+Precisamos de DUAS assinaturas na mesma URL: uma pra "deal" (gera o
+contrato ao entrar em Formalização) e outra pra "person" (dispara a
+consulta de crédito quando o campo Consultar SPC/Serasa vira Sim).
 """
 
 import sys
@@ -19,7 +23,7 @@ import requests
 import pipedrive_config as cfg
 
 
-def criar(url_base):
+def criar(url_base, event_object="deal"):
     if not cfg.WEBHOOK_BASIC_USER or not cfg.WEBHOOK_BASIC_PASS:
         print("Defina WEBHOOK_BASIC_USER e WEBHOOK_BASIC_PASS antes de criar o webhook.")
         sys.exit(1)
@@ -27,7 +31,7 @@ def criar(url_base):
     payload = {
         "subscription_url": f"{url_base.rstrip('/')}/webhook/pipedrive",
         "event_action": "updated",
-        "event_object": "deal",
+        "event_object": event_object,
         "http_auth_user": cfg.WEBHOOK_BASIC_USER,
         "http_auth_password": cfg.WEBHOOK_BASIC_PASS,
         "version": "1.0",
@@ -62,7 +66,8 @@ if __name__ == "__main__":
 
     comando = args[0]
     if comando == "criar" and len(args) >= 2:
-        criar(args[1])
+        tipo = args[2] if len(args) >= 3 else "deal"
+        criar(args[1], tipo)
     elif comando == "listar":
         listar()
     elif comando == "remover" and len(args) >= 2:
