@@ -16,6 +16,7 @@ Endpoint do webhook: POST /webhook/pipedrive (exige HTTP Basic Auth)
 
 import hmac
 import os
+import re
 import sys
 import tempfile
 import traceback
@@ -78,6 +79,20 @@ def parse_data_pipedrive(valor):
     return datetime.strptime(valor, "%Y-%m-%d").date()
 
 
+def endereco_residencial_completo(person):
+    """Monta 'endereço, complemento, CEP' na ordem, pulando o que estiver vazio."""
+    endereco = (person.get(cfg.CAMPO_ENDERECO_RESIDENCIAL) or "").strip()
+    complemento = (person.get(cfg.CAMPO_COMPLEMENTO_RESIDENCIAL) or "").strip()
+    cep = (person.get(cfg.CAMPO_CEP_RESIDENCIAL) or "").strip()
+
+    # O campo de endereço do Pipedrive às vezes já vem com o CEP no fim;
+    # nesse caso não repetimos o CEP do campo separado.
+    if cep and re.sub(r"\D", "", cep) in re.sub(r"\D", "", endereco):
+        cep = ""
+
+    return ", ".join(p for p in (endereco, complemento, cep) if p)
+
+
 def endereco_profissional_do_banco(deal, person):
     """Sede do banco onde o devedor trabalha, a partir da Organização do Deal."""
     org = deal.get("org_id") or person.get("org_id") or {}
@@ -95,7 +110,7 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
 
     nome_devedor = obrigatorio(person.get("name"), "Nome (Person)")
     cpf = obrigatorio(person.get(cfg.CAMPO_CPF), "CPF (Person)")
-    endereco_residencial = obrigatorio(person.get(cfg.CAMPO_ENDERECO_RESIDENCIAL), "Endereço Residencial (Person)")
+    endereco_residencial = obrigatorio(endereco_residencial_completo(person), "Endereço Residencial (Person)")
     num_parcelas_raw = obrigatorio(person.get(cfg.CAMPO_NUM_PARCELAS), "Número de Parcelas (Person)")
     data_primeira_raw = obrigatorio(person.get(cfg.CAMPO_VENCIMENTO_1A_PARCELA), "Vencimento da 1ª Parcela (Person)")
     valor_parcela_raw = obrigatorio(person.get(cfg.CAMPO_VALOR_PARCELA), "Valor da Parcela (Person)")

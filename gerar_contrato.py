@@ -410,6 +410,9 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
 
     altura_linha = 5.6
     proxima_linha_e_assinatura = False
+    primeira_assinatura = True
+    # traço + nome de cada signatário ocupam ~20mm; são 4 signatários.
+    ALTURA_BLOCO_ASSINATURAS = 85
     for paragrafo in limpar_para_pdf(texto_contrato).split("\n"):
         if paragrafo.strip() == "":
             pdf.ln(3)
@@ -418,10 +421,19 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         # Linha de "_____" vira um traço cinza de ponta a ponta (igual ao
         # modelo); a linha seguinte (nome/CPF de quem assina) fica centralizada.
         if set(paragrafo.strip()) == {"_"}:
+            # O bloco de assinaturas não se divide entre páginas: se as quatro
+            # assinaturas não couberem juntas, começam todas na página seguinte.
+            if primeira_assinatura:
+                primeira_assinatura = False
+                if pdf.h - pdf.b_margin - pdf.get_y() < ALTURA_BLOCO_ASSINATURAS:
+                    pdf.add_page()
+
             y = pdf.get_y() + 3
+            largura_traco = 95
+            x_inicio = (pdf.w - largura_traco) / 2
             pdf.set_draw_color(170, 170, 170)
             pdf.set_line_width(0.4)
-            pdf.line(pdf.l_margin, y, pdf.w - pdf.r_margin, y)
+            pdf.line(x_inicio, y, x_inicio + largura_traco, y)
             pdf.set_draw_color(0, 0, 0)
             pdf.set_line_width(0.2)
             pdf.ln(7)
@@ -454,7 +466,18 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         y0 = pdf.get_y()
         x0 = pdf.l_margin
         largura = pdf.w - pdf.l_margin - pdf.r_margin
-        altura = 68
+
+        # A caixa cresce quando o endereço do emitente ocupa mais de uma linha,
+        # senão o texto encostaria no traço da assinatura.
+        texto_cpf_endereco = (
+            f"CPF: **{cliente['cpf_devedor']}**   Endereço: **{cliente['endereco_residencial']}**"
+        )
+        pdf.set_font("Helvetica", size=9)
+        linhas_endereco = pdf.multi_cell(
+            largura - 8, 4.6, texto_cpf_endereco, markdown=True, dry_run=True, output="LINES"
+        )
+        altura = 68 + max(0, len(linhas_endereco) - 1) * 4.6
+
         pdf.rect(x0, y0, largura, altura)
         pdf.set_xy(x0 + 4, y0 + 4)
         pdf.set_font("Helvetica", style="B", size=13)
@@ -493,13 +516,11 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.set_xy(x0 + 4, y0 + 47)
         pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
         pdf.set_xy(x0 + 4, y0 + 52)
-        pdf.multi_cell(
-            largura - 8, 4.6,
-            f"CPF: **{cliente['cpf_devedor']}**   Endereço: **{cliente['endereco_residencial']}**",
-            markdown=True,
-        )
+        pdf.multi_cell(largura - 8, 4.6, texto_cpf_endereco, markdown=True)
 
-        pdf.line(x0 + 4, y0 + altura - 6, x0 + largura - 4, y0 + altura - 6)
+        largura_traco_nota = 95
+        x_traco_nota = x0 + (largura - largura_traco_nota) / 2
+        pdf.line(x_traco_nota, y0 + altura - 6, x_traco_nota + largura_traco_nota, y0 + altura - 6)
         pdf.set_xy(x0 + 4, y0 + altura - 5)
         pdf.set_font("Helvetica", size=9)
         pdf.cell(largura - 8, 5, "Assinatura do Emitente", align="C")
