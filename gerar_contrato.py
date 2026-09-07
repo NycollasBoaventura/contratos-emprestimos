@@ -524,36 +524,43 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
 
         # A caixa cresce quando o endereço do emitente ocupa mais de uma linha,
         # senão o texto encostaria no traço da assinatura.
-        texto_cpf_endereco = (
-            f"CPF: **{cliente['cpf_devedor']}**   "
-            f"Endereço: **{cliente['endereco_residencial'].upper()}**"
-        )
+        texto_endereco = f"Endereço: **{cliente['endereco_residencial'].upper()}**"
         pdf.set_font(fonte, size=9)
         linhas_endereco = pdf.multi_cell(
-            largura - 8, 4.6, texto_cpf_endereco, markdown=True, dry_run=True, output="LINES"
+            largura - 8, 4.6, texto_endereco, markdown=True, dry_run=True, output="LINES"
         )
         altura = 78 + max(0, len(linhas_endereco) - 1) * 4.6
 
-        # A coluna do vencimento também posiciona o valor, que fica centralizado
-        # logo abaixo da data.
-        largura_coluna_vencimento = largura - 8 - 60 - 40
-        x_coluna_vencimento = x0 + 4 + 60 + 40
-
         pdf.rect(x0, y0, largura, altura)
+
+        # Título e número ficam próximos um do outro (a largura da célula do
+        # título é medida em vez de fixa, senão sobrava um vão entre os dois).
         pdf.set_xy(x0 + 4, y0 + 4)
         pdf.set_font(fonte, style="B", size=13)
-        pdf.cell(60, 8, "NOTA PROMISSÓRIA")
+        titulo = "NOTA PROMISSÓRIA"
+        largura_titulo = pdf.get_string_width(titulo) + 4
+        pdf.cell(largura_titulo, 8, titulo)
+
         pdf.set_font(fonte, size=10)
-        pdf.cell(40, 8, f"Nº {p['numero']:02d}/{n:02d}")
+        texto_numero = f"Nº {p['numero']:02d}/{n:02d}"
+        largura_numero = pdf.get_string_width(texto_numero) + 6
+        pdf.cell(largura_numero, 8, texto_numero)
+
+        # Valor e vencimento ficam alinhados à direita, um embaixo do outro:
+        # o valor sobe para a primeira linha e o vencimento desce para a segunda.
+        largura_resto = largura - 8 - largura_titulo - largura_numero
+        x_resto = x0 + 4 + largura_titulo + largura_numero
+
+        pdf.set_font(fonte, style="B", size=12)
+        pdf.cell(largura_resto, 8, formata_moeda(p["valor"]), align="R")
+
+        pdf.set_xy(x_resto, y0 + 13)
+        pdf.set_font(fonte, size=10)
         pdf.cell(
-            largura_coluna_vencimento, 8,
+            largura_resto, 7,
             f"Vencimento: {formata_data_mes_nome(p['vencimento'])}",
             align="R",
         )
-
-        pdf.set_xy(x_coluna_vencimento, y0 + 13)
-        pdf.set_font(fonte, style="B", size=12)
-        pdf.cell(largura_coluna_vencimento, 7, formata_moeda(p["valor"]), align="C")
 
         pdf.set_xy(x0 + 4, y0 + 22)
         pdf.set_font(fonte, size=9.5)
@@ -568,20 +575,27 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
 
         pdf.set_xy(x0 + 4, y0 + 44)
         pdf.set_font(fonte, size=9)
-        pdf.cell(
-            95, 5,
-            f"Local de pagamento: **{cliente['local']}**",
-            markdown=True,
-        )
+        rotulo_local = "Local de pagamento: "
+        valor_local = f"{cliente['local'].upper()} - SP"
+        pdf.set_font(fonte, style="", size=9)
+        largura_local = pdf.get_string_width(rotulo_local)
+        pdf.set_font(fonte, style="B", size=9)
+        largura_local += pdf.get_string_width(valor_local)
+        pdf.set_font(fonte, style="", size=9)
+        pdf.cell(largura_local + 6, 5, f"{rotulo_local}**{valor_local}**", markdown=True)
         pdf.cell(
             0, 5,
             f"Data da Emissão: **{formata_data(cliente['data_emissao'])}**",
             markdown=True,
         )
         pdf.set_xy(x0 + 4, y0 + 51)
-        pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
+        pdf.cell(
+            0, 5,
+            f"**{cliente['nome_devedor'].upper()}**, CPF: **{cliente['cpf_devedor']}**",
+            markdown=True,
+        )
         pdf.set_xy(x0 + 4, y0 + 58)
-        pdf.multi_cell(largura - 8, 4.6, texto_cpf_endereco, markdown=True)
+        pdf.multi_cell(largura - 8, 4.6, texto_endereco, markdown=True)
 
         largura_traco_nota = 95
         x_traco_nota = x0 + (largura - largura_traco_nota) / 2
