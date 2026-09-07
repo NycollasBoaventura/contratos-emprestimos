@@ -100,6 +100,11 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
     data_primeira_raw = obrigatorio(person.get(cfg.CAMPO_VENCIMENTO_1A_PARCELA), "Vencimento da 1ª Parcela (Person)")
     valor_parcela_raw = obrigatorio(person.get(cfg.CAMPO_VALOR_PARCELA), "Valor da Parcela (Person)")
 
+    garantia_raw = obrigatorio(person.get(cfg.CAMPO_TIPO_GARANTIA), "Tipo de Garantia (Person)")
+    tipo_garantia = cfg.OPCOES_TIPO_GARANTIA.get(
+        int(str(garantia_raw).split(",")[0]) if garantia_raw else None
+    )
+
     estado_civil_raw = person.get(cfg.CAMPO_ESTADO_CIVIL)
     estado_civil = "solteiro(a)"
     if estado_civil_raw:
@@ -110,6 +115,13 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         raise ErroDadosIncompletos(
             f"Deal #{deal_id}: preencha no Pipedrive antes de gerar o contrato -> {', '.join(faltando)} "
             f"(cliente: {(nome_devedor or '?')[:1]}***, CPF {mascarar_cpf(cpf)})"
+        )
+
+    if tipo_garantia == cfg.CHEQUE:
+        raise ErroDadosIncompletos(
+            f"Deal #{deal_id}: Tipo de Garantia = Cheque, mas o modelo de contrato de cheque "
+            f"ainda não foi implementado. Nenhum contrato foi gerado (o modelo de promissória "
+            f"não serve para esse caso)."
         )
 
     num_parcelas = int(float(num_parcelas_raw))

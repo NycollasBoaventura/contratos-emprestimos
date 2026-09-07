@@ -28,6 +28,7 @@ CAMPO_VENCIMENTO_1A_PARCELA = "0df2b36511c86091677c523bf93f0209b77fe7e8"
 CAMPO_VALOR_PARCELA = "bf32192caf32a0e508966dc6df3a6353836ef595"
 
 # --- Campos customizados da PERSON (cliente): dados pessoais ---
+CAMPO_TIPO_GARANTIA = "d2ea8ff142921b6124cf07d15ab20f3d532f1a13"
 CAMPO_CPF = "c791736015a481c50888011f48bb5d5048896a99"
 CAMPO_ESTADO_CIVIL = "bcce592ed79b5db986d25486d8eb115c8076d42d"
 CAMPO_CARGO_PROFISSAO = "9fa78c701364ceffbfce28689104760bc9ab947b"
@@ -38,6 +39,14 @@ CAMPO_ENDERECO_COMERCIAL = "6ffc13880f82034a9487836dca01acc8d0eed285"
 OPCOES_ESTADO_CIVIL = {
     16: "casado(a)",
     17: "solteiro(a)",
+}
+
+# Opções do campo "Tipo de Garantia" (id -> tipo de contrato a gerar)
+PROMISSORIA = "promissoria"
+CHEQUE = "cheque"
+OPCOES_TIPO_GARANTIA = {
+    102: PROMISSORIA,
+    103: CHEQUE,
 }
 
 # Domicílio profissional do devedor: endereço fixo da sede do banco, definido
