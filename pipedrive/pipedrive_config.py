@@ -78,6 +78,14 @@ CAMPO_CONSULTAR_SERASA = "90a3c20913e52fdf4937a640579598c93a0800a6"
 OPCAO_SERASA_NAO = 113
 OPCAO_SERASA_SIM = 114
 
+# Aniversário: o Pipedrive não dispara automação por data, então um job diário
+# (aniversarios.py) marca "Sim" em quem faz aniversário hoje. A automação
+# nativa do Pipedrive escuta essa mudança e manda o e-mail.
+CAMPO_DATA_NASCIMENTO = "ba8dfebc66a47b273b2b6d49d0080a9f504d7a6d"
+CAMPO_ANIVERSARIO_HOJE = "93212c02d8ba28590165a48a212f57def04c9479"
+OPCAO_ANIVERSARIO_NAO = 115
+OPCAO_ANIVERSARIO_SIM = 116
+
 # Domicílio profissional do devedor: endereço fixo da sede do banco, definido
 # pela Organização vinculada ao Deal (o campo "Endereço Comercial" da Person
 # quase nunca vem preenchido). Chave = id da Organização no Pipedrive.

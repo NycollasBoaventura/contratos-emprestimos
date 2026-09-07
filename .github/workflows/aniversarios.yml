@@ -1,0 +1,31 @@
+name: Marcar aniversariantes no Pipedrive
+
+# O Pipedrive não dispara automação por data, então este job faz o papel do
+# "relógio": marca quem faz aniversário hoje e a automação nativa do
+# Pipedrive escuta essa mudança para enviar o e-mail.
+on:
+  schedule:
+    # 12:00 UTC = 09:00 no horário de Brasília. Rodar de manhã (e não à
+    # meia-noite) evita qualquer ambiguidade de virada de dia entre fusos.
+    - cron: "0 12 * * *"
+  workflow_dispatch: # permite rodar manualmente pelo painel do GitHub
+
+jobs:
+  marcar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Marcar aniversariantes
+        working-directory: pipedrive
+        env:
+          PIPEDRIVE_API_TOKEN: ${{ secrets.PIPEDRIVE_API_TOKEN }}
+          PIPEDRIVE_DOMAIN: emprestimosparabancarios
+        run: python aniversarios.py
