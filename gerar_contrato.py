@@ -533,7 +533,13 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.cell(60, 8, "NOTA PROMISSÓRIA")
         pdf.set_font(fonte, size=10)
         pdf.cell(40, 8, f"Nº {p['numero']:02d}/{n:02d}")
-        pdf.cell(0, 8, f"Vencimento: {formata_data_mes_nome(p['vencimento'])}", align="R")
+        # Largura explícita: com cell(0, ...) o texto ia até a margem da página,
+        # encostando na borda direita da caixa.
+        pdf.cell(
+            largura - 8 - 60 - 40, 8,
+            f"Vencimento: {formata_data_mes_nome(p['vencimento'])}",
+            align="R",
+        )
 
         pdf.set_xy(x0 + 4, y0 + 13)
         pdf.set_font(fonte, style="B", size=12)
