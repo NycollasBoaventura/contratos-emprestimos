@@ -257,29 +257,29 @@ def criar_nota_pessoa(person_id, conteudo):
     return resp["data"]
 
 
-def resetar_gatilho_consulta(person_id):
+def resetar_campo(person_id, campo, opcao_nao):
     r = requests.put(
         f"{cfg.BASE_URL}/persons/{person_id}",
         params={"api_token": cfg.TOKEN},
-        json={cfg.CAMPO_CONSULTAR_SPC_SERASA: cfg.OPCAO_CONSULTAR_NAO},
+        json={campo: opcao_nao},
         timeout=30,
     )
     r.raise_for_status()
 
 
-def processar_consulta_credito(person_id):
+def processar_consulta_credito(person_id, campo, opcao_nao, gerar_resultado):
+    """Roda uma consulta (SPC ou Serasa) de forma independente: busca o CPF,
+    chama gerar_resultado(cpf), registra nota e devolve o campo pra "Não"
+    (é um "botão", não um status — precisa poder ser usado de novo)."""
     person = pipedrive_get(f"/persons/{person_id}")
     cpf = person.get(cfg.CAMPO_CPF)
-    if not cpf:
-        resultado = "Não foi possível consultar: essa Person não tem CPF preenchido."
-    else:
-        resultado = consulta_credito.consultar_tudo(cpf)
-
+    resultado = (
+        "Não foi possível consultar: essa Person não tem CPF preenchido."
+        if not cpf else gerar_resultado(cpf)
+    )
     criar_nota_pessoa(person_id, resultado)
-    # Devolve o campo para "Não" pra poder disparar de novo no futuro
-    # (é um "botão", não deveria ficar marcado como se já tivesse sido lido).
-    resetar_gatilho_consulta(person_id)
-    return {"person_id": person_id, "resultado": resultado}
+    resetar_campo(person_id, campo, opcao_nao)
+    return resultado
 
 
 def processar_evento_pessoa(payload):
@@ -287,22 +287,30 @@ def processar_evento_pessoa(payload):
     previous = payload.get("previous") or {}
     person_id = current.get("id")
 
-    gatilho_atual = current.get(cfg.CAMPO_CONSULTAR_SPC_SERASA)
-    gatilho_anterior = previous.get(cfg.CAMPO_CONSULTAR_SPC_SERASA)
+    gatilhos = [
+        ("spc", cfg.CAMPO_CONSULTAR_SPC, cfg.OPCAO_SPC_SIM, cfg.OPCAO_SPC_NAO, consulta_credito.resultado_spc),
+        ("serasa", cfg.CAMPO_CONSULTAR_SERASA, cfg.OPCAO_SERASA_SIM, cfg.OPCAO_SERASA_NAO, consulta_credito.resultado_serasa),
+    ]
 
-    if gatilho_atual != cfg.OPCAO_CONSULTAR_SIM:
-        return jsonify({"ignorado": True, "motivo": "campo Consultar SPC/Serasa não é Sim"}), 200
-    if gatilho_anterior == cfg.OPCAO_CONSULTAR_SIM:
-        return jsonify({"ignorado": True, "motivo": "campo já estava em Sim (sem mudança)"}), 200
+    disparados = [
+        (nome, campo, opcao_nao, gerar_resultado)
+        for nome, campo, opcao_sim, opcao_nao, gerar_resultado in gatilhos
+        if current.get(campo) == opcao_sim and previous.get(campo) != opcao_sim
+    ]
+
+    if not disparados:
+        return jsonify({"ignorado": True, "motivo": "nenhum gatilho de consulta virou Sim"}), 200
     if not person_id:
         return jsonify({"erro": "payload sem person id"}), 400
 
+    respostas = {}
     try:
-        resultado = processar_consulta_credito(person_id)
-        return jsonify({"ok": True, **resultado}), 200
+        for nome, campo, opcao_nao, gerar_resultado in disparados:
+            respostas[nome] = processar_consulta_credito(person_id, campo, opcao_nao, gerar_resultado)
+        return jsonify({"ok": True, "person_id": person_id, "resultados": respostas}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"ok": False, "erro": str(e)}), 500
+        return jsonify({"ok": False, "erro": str(e), "resultados_parciais": respostas}), 500
 
 
 def processar_evento_deal(payload):

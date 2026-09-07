@@ -54,22 +54,24 @@ def consultar_serasa(cpf: str) -> dict:
     raise NotImplementedError("Chamada real à API da Serasa ainda não implementada.")
 
 
-def consultar_tudo(cpf: str) -> str:
-    """
-    Roda as duas consultas e devolve um texto pronto para virar nota no
-    Pipedrive, já tratando o caso (atual) de nenhuma das duas estar configurada.
-    """
-    linhas = [f"Consulta de crédito solicitada para o CPF {cpf}:", ""]
+def _formatar_resultado(nome: str, funcao, cpf: str) -> str:
+    """Roda uma única consulta e devolve um texto pronto para virar nota no
+    Pipedrive, já tratando o caso (atual) de a credencial não estar configurada."""
+    titulo = f"Consulta {nome} solicitada para o CPF {cpf}:"
+    try:
+        resultado = funcao(cpf)
+        return f"{titulo}\n\n✅ {resultado}"
+    except ConsultaNaoConfigurada as e:
+        return f"{titulo}\n\n⏳ Ainda não configurado — {e}"
+    except NotImplementedError as e:
+        return f"{titulo}\n\n⏳ {e}"
+    except Exception as e:
+        return f"{titulo}\n\n❌ Erro ao consultar — {e}"
 
-    for nome, funcao in (("Boa Vista SCPC", consultar_boa_vista), ("Serasa Experian", consultar_serasa)):
-        try:
-            resultado = funcao(cpf)
-            linhas.append(f"✅ {nome}: {resultado}")
-        except ConsultaNaoConfigurada as e:
-            linhas.append(f"⏳ {nome}: ainda não configurado — {e}")
-        except NotImplementedError as e:
-            linhas.append(f"⏳ {nome}: {e}")
-        except Exception as e:
-            linhas.append(f"❌ {nome}: erro ao consultar — {e}")
 
-    return "\n".join(linhas)
+def resultado_spc(cpf: str) -> str:
+    return _formatar_resultado("SPC (Boa Vista SCPC)", consultar_boa_vista, cpf)
+
+
+def resultado_serasa(cpf: str) -> str:
+    return _formatar_resultado("Serasa Experian", consultar_serasa, cpf)

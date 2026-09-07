@@ -66,12 +66,17 @@ OPCOES_TIPO_GARANTIA = {
     103: CHEQUE,
 }
 
-# "Botão" de disparo manual da consulta de crédito (SPC/Boa Vista + Serasa):
-# campo Não/Sim na Person. O servidor dispara quando detecta a mudança para
-# "Sim" e devolve o campo para "Não" ao terminar, pra poder ser usado de novo.
-CAMPO_CONSULTAR_SPC_SERASA = "6fab8616919e2e7cfa6d4bc6c120939ad77afcee"
-OPCAO_CONSULTAR_NAO = 109
-OPCAO_CONSULTAR_SIM = 110
+# "Botões" de disparo manual das consultas de crédito — um campo Não/Sim por
+# provedor, disparados de forma independente. O servidor dispara ao detectar
+# a mudança para "Sim" e devolve o campo para "Não" ao terminar (pode ser
+# usado de novo).
+CAMPO_CONSULTAR_SPC = "e652d39b6111a6bae31ee90d8c4cf2b0cf50b604"
+OPCAO_SPC_NAO = 111
+OPCAO_SPC_SIM = 112
+
+CAMPO_CONSULTAR_SERASA = "90a3c20913e52fdf4937a640579598c93a0800a6"
+OPCAO_SERASA_NAO = 113
+OPCAO_SERASA_SIM = 114
 
 # Domicílio profissional do devedor: endereço fixo da sede do banco, definido
 # pela Organização vinculada ao Deal (o campo "Endereço Comercial" da Person
