@@ -182,6 +182,14 @@
 
       <div class="linha2">
         <div>
+          <label>Multa moratória (%)</label>
+          <input id="multaMoratoriaPct" type="number" step="0.01" value="2">
+        </div>
+        <div></div>
+      </div>
+
+      <div class="linha2">
+        <div>
           <label>Honorários (%)</label>
           <input id="honorariosPct" type="number" step="0.01" value="20">
         </div>
@@ -402,6 +410,7 @@ II – Juros moratórios de ${d.jurosMoraPct}% ao mês, calculados pro rata die.
 <p>4.2. O inadimplemento de qualquer parcela implicará a resolução antecipada do parcelamento concedido e a incidência de multa penal compensatória correspondente a ${d.multaPct}% sobre o saldo devedor vencido e antecipadamente vencido, em razão da quebra do acordo firmado entre as partes.</p>
 <p>4.3. A multa prevista nesta cláusula possui natureza penal compensatória decorrente da rescisão do parcelamento por culpa exclusiva do DEVEDOR, não se confundindo com os juros moratórios e a atualização monetária.</p>
 <p>4.4. Em caso de cobrança judicial, o DEVEDOR responderá ainda pelas custas processuais, despesas de cobrança e honorários advocatícios contratuais equivalentes a ${d.honorariosPct}% sobre o débito atualizado.</p>
+<p>4.5. Sem prejuízo do disposto nos itens anteriores, o atraso no pagamento de qualquer parcela sujeitará o DEVEDOR ao pagamento de multa moratória de ${d.multaMoratoriaPct}% sobre o valor da parcela em atraso, acrescida de juros de mora de ${d.jurosMoraPct}% ao mês e correção monetária pela Tabela Prática do TJSP, ambos calculados pro rata die a partir do dia seguinte ao do vencimento até a data da efetiva liquidação.</p>
 
 <p class="clausula-titulo">CLÁUSULA QUINTA – DA AUTORIZAÇÃO DE DESCONTO EM RENDIMENTOS</p>
 <p>5.1. Em caso de mora e vencimento antecipado da obrigação, o DEVEDOR autoriza expressamente que eventual composição amigável ou judicial possa contemplar desconto mensal de até ${d.descontoPct}% de seus rendimentos líquidos, salários, verbas remuneratórias ou benefícios percebidos, até a integral liquidação da dívida.</p>
@@ -496,6 +505,7 @@ function lerFormulario() {
     local: txt('local'),
     foro: txt('foro'),
     jurosMoraPct: num('jurosMoraPct'),
+    multaMoratoriaPct: num('multaMoratoriaPct'),
     multaPct: num('multaPct'),
     honorariosPct: num('honorariosPct'),
     descontoPct: num('descontoPct'),

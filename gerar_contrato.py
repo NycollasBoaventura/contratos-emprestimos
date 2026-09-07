@@ -43,6 +43,7 @@ CREDOR_PIX = CREDOR_CNPJ
 
 # Valores padrao dos encargos, usados quando a planilha nao preencher a coluna.
 PADRAO_JUROS_MORA_PCT = 1
+PADRAO_MULTA_MORATORIA_PCT = 2
 PADRAO_MULTA_PCT = 30
 PADRAO_HONORARIOS_PCT = 20
 PADRAO_DESCONTO_RENDIMENTOS_PCT = 30
@@ -251,6 +252,7 @@ def carregar_clientes(caminho_planilha: Path):
             "local": valor_celula(row, headers, "local", obrigatorio=False, padrao=PADRAO_LOCAL),
             "foro": valor_celula(row, headers, "foro", obrigatorio=False, padrao=PADRAO_FORO),
             "juros_mora_pct": valor_celula(row, headers, "juros_mora_pct", obrigatorio=False, padrao=PADRAO_JUROS_MORA_PCT),
+            "multa_moratoria_pct": valor_celula(row, headers, "multa_moratoria_pct", obrigatorio=False, padrao=PADRAO_MULTA_MORATORIA_PCT),
             "multa_pct": valor_celula(row, headers, "multa_pct", obrigatorio=False, padrao=PADRAO_MULTA_PCT),
             "honorarios_pct": valor_celula(row, headers, "honorarios_pct", obrigatorio=False, padrao=PADRAO_HONORARIOS_PCT),
             "desconto_rendimentos_pct": valor_celula(row, headers, "desconto_rendimentos_pct", obrigatorio=False, padrao=PADRAO_DESCONTO_RENDIMENTOS_PCT),
@@ -374,6 +376,8 @@ II – Juros moratórios de {percentual_por_extenso(cliente['juros_mora_pct'])} 
 4.3. A multa prevista nesta cláusula possui natureza penal compensatória decorrente da rescisão do parcelamento por culpa exclusiva do DEVEDOR, não se confundindo com os juros moratórios e a atualização monetária.
 
 4.4. Em caso de cobrança judicial, o DEVEDOR responderá ainda pelas custas processuais, despesas de cobrança e honorários advocatícios contratuais equivalentes a {percentual_por_extenso(cliente['honorarios_pct'])} sobre o débito atualizado.
+
+4.5. Sem prejuízo do disposto nos itens anteriores, o atraso no pagamento de qualquer parcela sujeitará o DEVEDOR ao pagamento de multa moratória de {percentual_por_extenso(cliente['multa_moratoria_pct'])} sobre o valor da parcela em atraso, acrescida de juros de mora de {percentual_por_extenso(cliente['juros_mora_pct'])} ao mês e correção monetária pela Tabela Prática do TJSP, ambos calculados pro rata die a partir do dia seguinte ao do vencimento até a data da efetiva liquidação.
 
 CLÁUSULA QUINTA – DA AUTORIZAÇÃO DE DESCONTO EM RENDIMENTOS
 

@@ -163,6 +163,7 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         "local": gc.PADRAO_LOCAL,
         "foro": gc.PADRAO_FORO,
         "juros_mora_pct": gc.PADRAO_JUROS_MORA_PCT,
+        "multa_moratoria_pct": gc.PADRAO_MULTA_MORATORIA_PCT,
         "multa_pct": gc.PADRAO_MULTA_PCT,
         "honorarios_pct": gc.PADRAO_HONORARIOS_PCT,
         "desconto_rendimentos_pct": gc.PADRAO_DESCONTO_RENDIMENTOS_PCT,
