@@ -120,6 +120,17 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         int(str(garantia_raw).split(",")[0]) if garantia_raw else None
     )
 
+    # Dados que só existem quando a garantia é Cheque.
+    banco_cheque = agencia_cheque = conta_cheque = ""
+    numeros_cheques_raw = ""
+    if tipo_garantia == cfg.CHEQUE:
+        numeros_cheques_raw = obrigatorio(
+            person.get(cfg.CAMPO_NUMEROS_CHEQUES), "Números dos Cheques (Person)"
+        )
+        banco_cheque = obrigatorio(person.get(cfg.CAMPO_BANCO_CHEQUE), "Banco (Cheque) (Person)")
+        agencia_cheque = obrigatorio(person.get(cfg.CAMPO_AGENCIA_CHEQUE), "Agência (Cheque) (Person)")
+        conta_cheque = obrigatorio(person.get(cfg.CAMPO_CONTA_CHEQUE), "Conta (Cheque) (Person)")
+
     estado_civil_raw = person.get(cfg.CAMPO_ESTADO_CIVIL)
     estado_civil = "solteiro(a)"
     if estado_civil_raw:
@@ -132,16 +143,21 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
             f"(cliente: {(nome_devedor or '?')[:1]}***, CPF {mascarar_cpf(cpf)})"
         )
 
-    if tipo_garantia == cfg.CHEQUE:
-        raise ErroDadosIncompletos(
-            f"Deal #{deal_id}: Tipo de Garantia = Cheque, mas o modelo de contrato de cheque "
-            f"ainda não foi implementado. Nenhum contrato foi gerado (o modelo de promissória "
-            f"não serve para esse caso)."
-        )
-
     num_parcelas = int(float(num_parcelas_raw))
     valor_parcela = float(valor_parcela_raw)
     valor_total = round(num_parcelas * valor_parcela, 2)
+
+    cheques = []
+    if tipo_garantia == cfg.CHEQUE:
+        cheques = [c.strip() for c in re.split(r"[,;\n]+", str(numeros_cheques_raw)) if c.strip()]
+        # Um número de cheque errado no contrato inviabiliza a cobrança, então
+        # a quantidade tem que casar exatamente com o número de parcelas.
+        if len(cheques) != num_parcelas:
+            raise ErroDadosIncompletos(
+                f"Deal #{deal_id}: são {num_parcelas} parcelas, mas o campo "
+                f"\"Números dos Cheques\" tem {len(cheques)} número(s). "
+                f"Preencha um número de cheque por parcela, separados por vírgula."
+            )
 
     cliente = {
         "linha_planilha": f"deal#{deal_id}",
@@ -158,6 +174,11 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         "valor_total": valor_total,
         "num_parcelas": num_parcelas,
         "valor_parcela": valor_parcela,
+        "tipo_garantia": tipo_garantia,
+        "cheques": cheques,
+        "banco_cheque": banco_cheque,
+        "agencia_cheque": agencia_cheque,
+        "conta_cheque": conta_cheque,
         "data_primeira_parcela": parse_data_pipedrive(data_primeira_raw),
         "data_emissao": date.today(),
         "local": gc.PADRAO_LOCAL,

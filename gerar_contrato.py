@@ -300,16 +300,56 @@ def calcular_parcelas(cliente):
 # Geracao do texto do contrato
 # ---------------------------------------------------------------------------
 
-def montar_clausula_parcelas(parcelas, n):
+PROMISSORIA = "promissoria"
+CHEQUE = "cheque"
+
+
+def montar_clausula_parcelas(parcelas, n, tipo_garantia=PROMISSORIA, cheques=None):
     letras = "abcdefghijklmnopqrstuvwxyz"
     linhas = []
-    for p, letra in zip(parcelas, letras):
+    for i, (p, letra) in enumerate(zip(parcelas, letras)):
         final = "." if p["numero"] == n else ";"
+        if tipo_garantia == CHEQUE:
+            titulo = f"Cheque nº {cheques[i]}"
+        else:
+            titulo = f"Nota Promissória {p['numero']:02d}/{n:02d}"
         linhas.append(
-            f"{letra}) Nota Promissória {p['numero']:02d}/{n:02d} – {formata_moeda(p['valor'])} – "
+            f"{letra}) {titulo} – {formata_moeda(p['valor'])} – "
             f"vencimento em {formata_data(p['vencimento'])}{final}"
         )
     return linhas
+
+
+def montar_clausula_segunda(cliente, parcelas, n, n_extenso):
+    """Cláusula Segunda muda conforme a garantia (Notas Promissórias ou Cheques)."""
+    valor_parcela = formata_moeda(parcelas[0]["valor"])
+    valor_parcela_extenso = valor_por_extenso(parcelas[0]["valor"])
+    tipo = cliente.get("tipo_garantia", PROMISSORIA)
+
+    if tipo == CHEQUE:
+        lista = "\n".join(
+            montar_clausula_parcelas(parcelas, n, CHEQUE, cliente["cheques"])
+        )
+        return f"""2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {valor_parcela} ({valor_parcela_extenso}) cada, representadas por Cheques emitidos pelo DEVEDOR, sacados sobre o Banco {cliente['banco_cheque']}, agência {cliente['agencia_cheque']}, conta {cliente['conta_cheque']}, com os seguintes vencimentos:
+
+{lista}
+
+2.2. Os Cheques são emitidos em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.
+
+2.3. Cada Cheque será apresentado pelo CREDOR na respectiva data de vencimento, obrigando-se o DEVEDOR a manter em conta fundos suficientes para sua liquidação.
+
+2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do Cheque na conta do CREDOR."""
+
+    lista = "\n".join(montar_clausula_parcelas(parcelas, n))
+    return f"""2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {valor_parcela} ({valor_parcela_extenso}) cada, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:
+
+{lista}
+
+2.2. As Notas Promissórias são emitidas em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.
+
+2.3. O pagamento de cada parcela será realizado mediante PIX para a chave CNPJ nº {CREDOR_PIX}, de titularidade do CREDOR, até o final do dia do respectivo vencimento.
+
+2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do valor na conta do CREDOR, obrigando-se este a devolver ao DEVEDOR a respectiva Nota Promissória quitada."""
 
 
 def montar_texto_contrato(cliente, parcelas):
@@ -325,7 +365,7 @@ def montar_texto_contrato(cliente, parcelas):
         qualificacao_devedor += f", possuindo domicílio profissional na {cliente['endereco_profissional']}"
     qualificacao_devedor += "."
 
-    clausulas_parcelas = "\n".join(montar_clausula_parcelas(parcelas, n))
+    clausula_segunda = montar_clausula_segunda(cliente, parcelas, n, n_extenso)
 
     texto = f"""INSTRUMENTO PARTICULAR DE CONFISSÃO DE DÍVIDA, PARCELAMENTO E OUTRAS AVENÇAS
 
@@ -347,15 +387,7 @@ CLÁUSULA PRIMEIRA – DA ORIGEM, CERTEZA E LIQUIDEZ DA DÍVIDA
 
 CLÁUSULA SEGUNDA – DA FORMA DE PAGAMENTO
 
-2.1. A dívida será liquidada mediante o pagamento de {n:02d} ({n_extenso}) parcelas sucessivas no valor de {formata_moeda(parcelas[0]['valor'])} ({valor_por_extenso(parcelas[0]['valor'])}) cada, representadas por Notas Promissórias emitidas pelo DEVEDOR, com os seguintes vencimentos:
-
-{clausulas_parcelas}
-
-2.2. As Notas Promissórias são emitidas em caráter de garantia da obrigação ora confessada, possuindo natureza pro solvendo, não implicando novação da dívida.
-
-2.3. O pagamento de cada parcela será realizado mediante PIX para a chave CNPJ nº {CREDOR_PIX}, de titularidade do CREDOR, até o final do dia do respectivo vencimento.
-
-2.4. A quitação de cada parcela ocorrerá mediante a efetiva compensação do valor na conta do CREDOR, obrigando-se este a devolver ao DEVEDOR a respectiva Nota Promissória quitada.
+{clausula_segunda}
 
 CLÁUSULA TERCEIRA – DO VENCIMENTO ANTECIPADO
 
@@ -511,6 +543,13 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
 
         pdf.multi_cell(0, altura_linha, paragrafo, align=alinhamento)
         pdf.ln(1)
+
+    # Cheque é documento físico do banco: não há folha a gerar, o PDF termina
+    # nas assinaturas.
+    if cliente.get("tipo_garantia", PROMISSORIA) == CHEQUE:
+        caminho_saida.parent.mkdir(parents=True, exist_ok=True)
+        pdf.output(str(caminho_saida))
+        return
 
     # --- Notas Promissórias (sempre 3 por página, igual ao modelo original) ---
     n = cliente["num_parcelas"]

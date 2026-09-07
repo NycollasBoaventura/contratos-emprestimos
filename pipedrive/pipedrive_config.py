@@ -29,6 +29,13 @@ CAMPO_VALOR_PARCELA = "bf32192caf32a0e508966dc6df3a6353836ef595"
 
 # --- Campos customizados da PERSON (cliente): dados pessoais ---
 CAMPO_TIPO_GARANTIA = "d2ea8ff142921b6124cf07d15ab20f3d532f1a13"
+
+# Só usados quando o Tipo de Garantia é Cheque (por isso não são obrigatórios
+# no Pipedrive: quem é promissória não precisa preencher).
+CAMPO_NUMEROS_CHEQUES = "06e09dc702705e30517b8f6373ee741c43767a9b"
+CAMPO_BANCO_CHEQUE = "25fcd36a03b4d72332ee6dafeb739686f0328316"
+CAMPO_AGENCIA_CHEQUE = "53495e9ba4449751557d12b9b973701a070f949d"
+CAMPO_CONTA_CHEQUE = "b572fa41353cf02e1bf11a4effc5649ae26e1156"
 CAMPO_CPF = "c791736015a481c50888011f48bb5d5048896a99"
 CAMPO_ESTADO_CIVIL = "bcce592ed79b5db986d25486d8eb115c8076d42d"
 CAMPO_CARGO_PROFISSAO = "9fa78c701364ceffbfce28689104760bc9ab947b"
