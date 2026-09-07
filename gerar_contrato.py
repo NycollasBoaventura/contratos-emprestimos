@@ -459,8 +459,8 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
     altura_linha = 5.3
     proxima_linha_e_assinatura = False
     primeira_assinatura = True
-    # traço + nome de cada signatário ocupam ~20mm; são 4 signatários.
-    ALTURA_BLOCO_ASSINATURAS = 85
+    # traço + nome de cada signatário ocupam ~24mm; são 4 signatários.
+    ALTURA_BLOCO_ASSINATURAS = 95
     for paragrafo in limpar_para_pdf(texto_contrato, fonte).split("\n"):
         if paragrafo.strip() == "":
             pdf.ln(2.5)
@@ -476,7 +476,8 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
                 if pdf.h - pdf.b_margin - pdf.get_y() < ALTURA_BLOCO_ASSINATURAS:
                     pdf.add_page()
 
-            y = pdf.get_y() + 3
+            # Espaço em branco acima do traço, para caber a assinatura à mão.
+            y = pdf.get_y() + 10
             largura_traco = 95
             x_inicio = (pdf.w - largura_traco) / 2
             pdf.set_draw_color(170, 170, 170)
@@ -484,7 +485,9 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
             pdf.line(x_inicio, y, x_inicio + largura_traco, y)
             pdf.set_draw_color(0, 0, 0)
             pdf.set_line_width(0.2)
-            pdf.ln(7)
+            # Cursor logo abaixo do traço (set_y, não ln: o ln avançaria a partir
+            # da posição anterior e o nome cairia sobre o traço).
+            pdf.set_y(y + 1)
             proxima_linha_e_assinatura = True
             continue
 
@@ -529,7 +532,12 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         linhas_endereco = pdf.multi_cell(
             largura - 8, 4.6, texto_cpf_endereco, markdown=True, dry_run=True, output="LINES"
         )
-        altura = 76 + max(0, len(linhas_endereco) - 1) * 4.6
+        altura = 78 + max(0, len(linhas_endereco) - 1) * 4.6
+
+        # A coluna do vencimento também posiciona o valor, que fica centralizado
+        # logo abaixo da data.
+        largura_coluna_vencimento = largura - 8 - 60 - 40
+        x_coluna_vencimento = x0 + 4 + 60 + 40
 
         pdf.rect(x0, y0, largura, altura)
         pdf.set_xy(x0 + 4, y0 + 4)
@@ -537,17 +545,15 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.cell(60, 8, "NOTA PROMISSÓRIA")
         pdf.set_font(fonte, size=10)
         pdf.cell(40, 8, f"Nº {p['numero']:02d}/{n:02d}")
-        # Largura explícita: com cell(0, ...) o texto ia até a margem da página,
-        # encostando na borda direita da caixa.
         pdf.cell(
-            largura - 8 - 60 - 40, 8,
+            largura_coluna_vencimento, 8,
             f"Vencimento: {formata_data_mes_nome(p['vencimento'])}",
             align="R",
         )
 
-        pdf.set_xy(x0 + 4, y0 + 13)
+        pdf.set_xy(x_coluna_vencimento, y0 + 13)
         pdf.set_font(fonte, style="B", size=12)
-        pdf.cell(0, 7, formata_moeda(p["valor"]), align="C")
+        pdf.cell(largura_coluna_vencimento, 7, formata_moeda(p["valor"]), align="C")
 
         pdf.set_xy(x0 + 4, y0 + 22)
         pdf.set_font(fonte, size=9.5)
@@ -572,9 +578,9 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
             f"Data da Emissão: **{formata_data(cliente['data_emissao'])}**",
             markdown=True,
         )
-        pdf.set_xy(x0 + 4, y0 + 52)
+        pdf.set_xy(x0 + 4, y0 + 51)
         pdf.cell(0, 5, f"Nome do Emitente: **{cliente['nome_devedor'].upper()}**", markdown=True)
-        pdf.set_xy(x0 + 4, y0 + 60)
+        pdf.set_xy(x0 + 4, y0 + 58)
         pdf.multi_cell(largura - 8, 4.6, texto_cpf_endereco, markdown=True)
 
         largura_traco_nota = 95
@@ -584,7 +590,7 @@ def gerar_pdf_contrato(cliente, parcelas, texto_contrato, caminho_saida: Path):
         pdf.set_font(fonte, size=9)
         pdf.cell(largura - 8, 5, "Assinatura do Emitente", align="C")
 
-        pdf.set_y(y0 + altura + 6)
+        pdf.set_y(y0 + altura + 4)
 
     caminho_saida.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(caminho_saida))
