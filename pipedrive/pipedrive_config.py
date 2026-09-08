@@ -45,7 +45,9 @@ OPCOES_BANCO_CHEQUE = {
     107: "Bradesco",
 }
 CAMPO_CPF = "c791736015a481c50888011f48bb5d5048896a99"
-CAMPO_ESTADO_CIVIL = "bcce592ed79b5db986d25486d8eb115c8076d42d"
+# Seleção única. O campo anterior era de múltipla escolha, o que deixava
+# marcar dois estados civis ao mesmo tempo (e o contrato usava só o primeiro).
+CAMPO_ESTADO_CIVIL = "5fdafad1bd057c2de7882d306eb6c03417052ee2"
 CAMPO_CARGO_PROFISSAO = "9fa78c701364ceffbfce28689104760bc9ab947b"
 CAMPO_ENDERECO_RESIDENCIAL = "2d17fd0de514078801567b76d8a8d42ddb140834"
 CAMPO_COMPLEMENTO_RESIDENCIAL = "cc011085599eb129fe4912c723168050a31184c3"

@@ -93,6 +93,9 @@ ESTADO_CIVIL_NEUTRO = {
     "viúva": "viúvo(a)",
     "separado": "separado(a)",
     "separada": "separado(a)",
+    # entra na frase como "..., em união estável, ..."
+    "união estável": "em união estável",
+    "uniao estavel": "em união estável",
 }
 
 
