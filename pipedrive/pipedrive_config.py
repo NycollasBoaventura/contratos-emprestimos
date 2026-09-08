@@ -52,11 +52,10 @@ CAMPO_COMPLEMENTO_RESIDENCIAL = "cc011085599eb129fe4912c723168050a31184c3"
 CAMPO_CEP_RESIDENCIAL = "c8bbe88fc8234940c33b6350cbb792d7872925d9"
 CAMPO_ENDERECO_COMERCIAL = "6ffc13880f82034a9487836dca01acc8d0eed285"
 
-# Opções do campo "Estado Civil" (id -> texto usado no contrato)
-OPCOES_ESTADO_CIVIL = {
-    16: "casado(a)",
-    17: "solteiro(a)",
-}
+# O rótulo do Estado Civil é lido do Pipedrive na hora da geração
+# (ver estado_civil_do_contrato em webhook_server.py). Fixar os ids aqui
+# fez o contrato escrever o estado civil errado quando as opções foram
+# editadas na tela.
 
 # Opções do campo "Tipo de Garantia" (id -> tipo de contrato a gerar)
 PROMISSORIA = "promissoria"

@@ -80,6 +80,49 @@ def parse_data_pipedrive(valor):
     return datetime.strptime(valor, "%Y-%m-%d").date()
 
 
+ESTADO_CIVIL_NEUTRO = {
+    "solteiro": "solteiro(a)",
+    "solteira": "solteiro(a)",
+    "casado": "casado(a)",
+    "casada": "casado(a)",
+    "divorciado": "divorciado(a)",
+    "divorciada": "divorciado(a)",
+    "viuvo": "viúvo(a)",
+    "viúvo": "viúvo(a)",
+    "viuva": "viúvo(a)",
+    "viúva": "viúvo(a)",
+    "separado": "separado(a)",
+    "separada": "separado(a)",
+}
+
+
+def rotulo_da_opcao(field_key, valor):
+    """Traduz o id da opção pelo rótulo atual no Pipedrive.
+
+    Os ids são lidos na hora, de propósito: quando os ids ficavam fixos no
+    código e alguém editava as opções na tela, o contrato passava a escrever
+    o estado civil errado sem ninguém perceber.
+    """
+    if not valor:
+        return None
+    primeiro_id = str(valor).split(",")[0].strip()
+    campos = pipedrive_get("/personFields")
+    for campo in campos:
+        if campo.get("key") != field_key:
+            continue
+        for opcao in campo.get("options") or []:
+            if str(opcao.get("id")) == primeiro_id:
+                return opcao.get("label")
+    return None
+
+
+def estado_civil_do_contrato(person):
+    rotulo = rotulo_da_opcao(cfg.CAMPO_ESTADO_CIVIL, person.get(cfg.CAMPO_ESTADO_CIVIL))
+    if not rotulo:
+        return None
+    return ESTADO_CIVIL_NEUTRO.get(rotulo.strip().lower(), rotulo.strip().lower())
+
+
 def endereco_residencial_completo(person):
     """Monta 'endereço, complemento, CEP' na ordem, pulando o que estiver vazio."""
     endereco = (person.get(cfg.CAMPO_ENDERECO_RESIDENCIAL) or "").strip()
@@ -135,11 +178,8 @@ def montar_cliente_a_partir_do_pipedrive(deal, person, deal_id):
         agencia_cheque = obrigatorio(person.get(cfg.CAMPO_AGENCIA_CHEQUE), "Agência (Cheque) (Person)")
         conta_cheque = obrigatorio(person.get(cfg.CAMPO_CONTA_CHEQUE), "Conta (Cheque) (Person)")
 
-    estado_civil_raw = person.get(cfg.CAMPO_ESTADO_CIVIL)
-    estado_civil = "solteiro(a)"
-    if estado_civil_raw:
-        primeiro_id = int(str(estado_civil_raw).split(",")[0])
-        estado_civil = cfg.OPCOES_ESTADO_CIVIL.get(primeiro_id, "solteiro(a)")
+    # Sem default: um contrato não pode afirmar estado civil que ninguém informou.
+    estado_civil = obrigatorio(estado_civil_do_contrato(person), "Estado Civil (Person)")
 
     if faltando:
         raise ErroDadosIncompletos(
